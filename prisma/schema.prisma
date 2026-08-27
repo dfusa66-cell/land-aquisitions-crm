@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Lead {
+  id                   String       @id @default(cuid())
+  firstName            String?
+  lastName             String?
+  phone                String?      @unique
+  acres                Float?
+  county               String?
+  state                String?
+  apn                  String?      @unique
+  status               String       @default("WARM")
+  leadScore            Int          @default(0)
+  askingPrice          Float?
+  estimatedMarketValue Float?
+  targetPurchasePrice  Float?
+  startingOffer        Float?
+  mao                  Float?
+  absoluteMaxPrice     Float?
+  motivation           String?
+  sellerInterest       String?
+  sentiment            String?
+  negotiationStage     String?
+  aiSummary            String?
+  nextAction           String?
+  followUpDate         DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  messages             Message[]
+  analyses             AIAnalysis[]
+  followUps            FollowUp[]
+  suggestedReplies     SuggestedReply[]
+
+  @@index([phone])
+  @@index([apn])
+  @@index([status, leadScore])
+}
+
+model Message {
+  id        String           @id @default(cuid())
+  leadId    String
+  content   String
+  direction String
+  timestamp DateTime?
+  source    String           @default("SmarterContact")
+  createdAt DateTime         @default(now())
+  lead      Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, content, direction, timestamp])
+  @@index([leadId, timestamp])
+}
+
+model AIAnalysis {
+  id                     String     @id @default(cuid())
+  leadId                 String
+  classification          String
+  leadScore               Int
+  sellerInterest          String
+  motivation              String
+  sentiment               String
+  askingPrice             Float?
+  negotiationStage        String
+  summary                 String
+  nextAction              String
+  suggestedReply          String
+  followUpDate            DateTime?
+  requiresHumanAttention  Boolean    @default(false)
+  reasoningSummary        String
+  rawJson                 String
+  createdAt               DateTime   @default(now())
+  lead                    Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model FollowUp {
+  id        String   @id @default(cuid())
+  leadId    String
+  dueAt     DateTime
+  note      String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model SuggestedReply {
+  id               String         @id @default(cuid())
+  leadId           String
+  aiSuggestedReply String
+  actualReply      String?
+  feedback         String?
+  copiedAt         DateTime?
+  markedSentAt     DateTime?
+  createdAt        DateTime       @default(now())
+  lead             Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model NegotiationSettings {
+  id                 String   @id @default("default")
+  negotiationStyle   String
+  generalRules       String
+  mustNeverSay       String
+  preferredQuestions String
+  offerStrategy      String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

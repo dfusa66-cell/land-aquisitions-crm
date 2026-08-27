@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { background: #f5f7f4; color: #172026; }
+a { color: inherit; text-decoration: none; }
+
+.table-grid {
+  grid-template-columns: 76px 104px 150px 140px 130px 76px 120px 80px 130px 120px 110px 320px 240px 124px 220px;
+}
