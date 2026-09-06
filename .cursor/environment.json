@@ -1,0 +1,13 @@
+{
+  "name": "Land Acquisition CRM",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "pnpm dev"
+    }
+  ],
+  "ports": [
+    3000
+  ]
+}
