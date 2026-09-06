@@ -1,48 +1,42 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
-  BarChart3,
-  Briefcase,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  FileSignature,
-  Flame,
-  Inbox,
+  CheckCircle2,
+  Columns3,
+  CircleOff,
   LayoutDashboard,
-  Map,
-  PieChart,
+  MapPin,
   Settings,
-  UserCircle,
-  Users
+  UserCircle
 } from "lucide-react";
 
 const nav = [
   ["Dashboard", "/", LayoutDashboard],
-  ["Inbox", "/leads?group=new_replies", Inbox],
-  ["Leads", "/leads", Users],
-  ["Hot Leads", "/leads?group=hot", Flame],
-  ["Follow Ups", "/leads?group=follow_up", CalendarDays],
-  ["Offers", "/leads?group=offers", Briefcase],
-  ["Contracts", "/leads?group=contracts", FileSignature],
-  ["Deals", "/leads?group=closed", BarChart3],
-  ["Deal Finder", "/leads?group=all", Map],
-  ["Planner", "/leads?group=follow_up", CalendarDays],
-  ["Analytics", "/leads?group=all", PieChart]
+  ["Pipeline", "/leads?view=pipeline", Columns3],
+  ["All deals", "/leads?group=all&view=pipeline", MapPin],
+  ["Ready to close", "/leads?group=ready_to_close&view=pipeline", CheckCircle2],
+  ["Closed / Dead", "/leads?group=closed&view=pipeline", CircleOff]
 ] as const;
 
 export function MainSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const group = params.get("group");
+  const view = params.get("view");
 
   return (
     <aside className={`hidden min-h-screen shrink-0 bg-[#10241b] text-white lg:flex lg:flex-col ${collapsed ? "w-20" : "w-64"}`}>
       <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
         {!collapsed && (
           <div>
-            <div className="font-semibold">Acquisition CRM</div>
-            <div className="text-xs text-white/55">Land deals command center</div>
+            <div className="font-semibold leading-tight">Sell Your Land</div>
+            <div className="text-xs text-white/55">to Diego</div>
           </div>
         )}
         <button
@@ -56,7 +50,14 @@ export function MainSidebar() {
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {nav.map(([label, href, Icon]) => {
-          const active = label === "Leads";
+          const url = new URL(href, "http://local");
+          const active =
+            (href === "/" && pathname === "/") ||
+            (href.startsWith("/leads") && pathname === "/leads" && (
+              (url.searchParams.get("group") && url.searchParams.get("group") === group) ||
+              (!url.searchParams.get("group") && href.includes("view=pipeline") && view === "pipeline" && !group) ||
+              (href === "/leads?group=all&view=pipeline" && (group === "all" || (!group && view !== "pipeline")))
+            ));
           return (
             <Link
               key={label}

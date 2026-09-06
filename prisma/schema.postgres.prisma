@@ -40,6 +40,18 @@ model Lead {
   aiSummary            String?
   nextAction           String?
   followUpDate         DateTime?
+  pipelineStage        String   @default("LEAD_SC")
+  landPortalUrl        String?
+  lpEstimate           Float?
+  arvMid               Float?
+  arvBest              Float?
+  arvWorst             Float?
+  droneCost            Float?
+  purchasePrice        Float?
+  actualProfit         Float?
+  closedAt             DateTime?
+  underwritingPackNote String?
+  underwritingPackUrl  String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   messages             Message[]
@@ -50,6 +62,7 @@ model Lead {
   @@index([phone])
   @@index([apn])
   @@index([status, leadScore])
+  @@index([pipelineStage])
 }
 
 model Message {

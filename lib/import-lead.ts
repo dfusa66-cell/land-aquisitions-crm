@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { analyzeLead, toLeadStatus } from "@/lib/ai";
 import { normalizeDirection, normalizePhone, parseDate, parseMoney, splitZapierField } from "@/lib/lead-utils";
+import { nextPipelineStageOnImport } from "@/lib/pipeline";
 
 type ImportPayload = Record<string, unknown>;
 
@@ -67,6 +68,11 @@ export async function importLead(payload: ImportPayload) {
   const messages = await prisma.message.findMany({ where: { leadId: lead.id }, orderBy: [{ timestamp: "asc" }, { createdAt: "asc" }] });
   const analysis = await analyzeLead(messages, settings ? Object.values(settings).join("\n") : "");
   const status = toLeadStatus(analysis.classification);
+  const pipelineStage = nextPipelineStageOnImport({
+    status,
+    askingPrice: analysis.asking_price,
+    existingStage: lead.pipelineStage
+  });
 
   await prisma.aIAnalysis.create({
     data: {
@@ -100,7 +106,8 @@ export async function importLead(payload: ImportPayload) {
       negotiationStage: analysis.negotiation_stage,
       aiSummary: analysis.summary,
       nextAction: analysis.next_action,
-      followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null
+      followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null,
+      pipelineStage
     }
   });
 

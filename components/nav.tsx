@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { BarChart3, Flame, LayoutDashboard, ListChecks, Settings, Users } from "lucide-react";
+import { LayoutDashboard, Columns3, MapPin, Settings, CheckCircle2 } from "lucide-react";
 
 const items = [
   ["Dashboard", "/", LayoutDashboard],
-  ["Leads", "/leads", Users],
-  ["Hot Leads", "/leads?status=HOT", Flame],
-  ["Follow Ups", "/leads?status=FOLLOW_UP", ListChecks],
+  ["Pipeline", "/leads?view=pipeline", Columns3],
+  ["Deals", "/leads", MapPin],
+  ["Ready to close", "/leads?group=ready_to_close&view=pipeline", CheckCircle2],
   ["Settings", "/settings", Settings]
 ] as const;
 
@@ -13,10 +13,10 @@ export function AppNav() {
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-black/10 bg-white px-5 py-6 lg:block">
       <div className="mb-8 flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded bg-moss text-white"><BarChart3 size={20} /></div>
+        <div className="grid h-10 w-10 place-items-center rounded bg-moss text-white text-sm font-bold">DF</div>
         <div>
-          <div className="font-semibold">Acquisition CRM</div>
-          <div className="text-xs text-slate-500">Shadow Mode V1</div>
+          <div className="font-semibold">Sell Your Land to Diego</div>
+          <div className="text-xs text-slate-500">Vacant land flipping CRM</div>
         </div>
       </div>
       <nav className="space-y-1">

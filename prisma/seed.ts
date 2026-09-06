@@ -41,6 +41,92 @@ async function main() {
       "Message History Date": ["2026-08-20T14:00:00Z", "2026-08-20T14:07:00Z", "2026-08-20T14:09:00Z", "2026-08-20T14:15:00Z"]
     });
   }
+
+  await prisma.lead.update({
+    where: { phone: "+15055550141" },
+    data: {
+      pipelineStage: "UNDERWRITTEN",
+      askingPrice: 35000,
+      landPortalUrl: "https://www.landportal.com/",
+      lpEstimate: 82000,
+      arvWorst: 70000,
+      arvMid: 90000,
+      arvBest: 110000,
+      purchasePrice: 45000,
+      droneCost: 200,
+      underwritingPackNote: "Demo pack. Later an agent can push comps here."
+    }
+  });
+  await prisma.lead.update({
+    where: { phone: "+19285550177" },
+    data: {
+      pipelineStage: "OFERTA_ENVIADA",
+      askingPrice: 28000,
+      lpEstimate: 50000,
+      arvWorst: 42000,
+      arvMid: 56000,
+      arvBest: 68000,
+      purchasePrice: 22400,
+      droneCost: 175
+    }
+  });
+  await prisma.lead.update({
+    where: { phone: "+18065550180" },
+    data: {
+      pipelineStage: "PRECIO_ASK",
+      askingPrice: 18000
+    }
+  });
+
+  await prisma.lead.upsert({
+    where: { phone: "+15755550111" },
+    update: {},
+    create: {
+      firstName: "Elena",
+      lastName: "Cruz",
+      phone: "+15755550111",
+      acres: 15,
+      county: "Doña Ana",
+      state: "NM",
+      apn: "DA-220-18",
+      status: "HOT",
+      pipelineStage: "CERRADO",
+      askingPrice: 28000,
+      landPortalUrl: "https://www.landportal.com/",
+      lpEstimate: 70000,
+      arvWorst: 60000,
+      arvMid: 72000,
+      arvBest: 85000,
+      purchasePrice: 36000,
+      droneCost: 200,
+      closedAt: new Date(),
+      nextAction: "Recorded as closed this month for dashboard profit."
+    }
+  });
+
+  await prisma.lead.upsert({
+    where: { phone: "+15755550122" },
+    update: {},
+    create: {
+      firstName: "Omar",
+      lastName: "Hale",
+      phone: "+15755550122",
+      acres: 8,
+      county: "Otero",
+      state: "NM",
+      apn: "OT-118-04",
+      status: "HOT",
+      pipelineStage: "READY_TO_CLOSE",
+      askingPrice: 22000,
+      lpEstimate: 48000,
+      arvWorst: 40000,
+      arvMid: 52000,
+      arvBest: 61000,
+      purchasePrice: 26000,
+      droneCost: 225,
+      nextAction: "Title and cash-to-close."
+    }
+  });
 }
 
 main().finally(() => prisma.$disconnect());
