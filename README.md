@@ -8,6 +8,7 @@ Live: https://land-ai-crm-real.vercel.app/
 
 - Private login for a single user (`diego@example.com` / `demo1234` locally).
 - Dashboard that compares **potential profit** (open pipeline) vs **closed profit this month**.
+- **Agente pipeline** (`/agent`) — Spanish-friendly chat that answers from live Prisma leads (stage counts, HOT deals, ofertas enviadas, ready to close, closed profit). Optional OpenAI polish; rule-based + retrieval if `OPENAI_API_KEY` is blank.
 - Kanban pipeline: Lead SC → Precio/Ask → Underwritten → Oferta enviada → Negociación → Ready to close → Cerrado / Dead.
 - Deal workspace with contact, parcel, Land Portal, ARV, computed 40%/50% offers, and estimated profit.
 - Chronological SMS reconstruction plus AI Deal Brain (OpenAI or local keyword fallback).
@@ -37,6 +38,7 @@ Offers are always 40% and 50% of mid ARV. Optional `actualProfit` overrides the 
 ```text
 app/
   api/leads/import/route.ts   Zapier import API
+  agent/page.tsx              Agente pipeline chat
   leads/page.tsx              Pipeline / cards / list
   leads/[id]/page.tsx         Deal workspace
   login/page.tsx              Private login
@@ -48,6 +50,7 @@ lib/
   pipeline.ts                 Land stages
   underwriting.ts             Offer + profit math
   ai.ts                       OpenAI analysis and local fallback
+  pipeline-agent.ts           Grounded pipeline Q&A (rules + optional OpenAI)
   auth.ts                     Cookie session helpers
   import-lead.ts              Import, dedupe, analysis
 prisma/
@@ -65,7 +68,7 @@ Copy one of the example files. These are the only runtime variables the app read
 | `APP_URL` | Recommended | Canonical site URL. |
 | `SESSION_SECRET` | Yes in production | Reserved for hardening the cookie session. |
 | `CRM_IMPORT_API_KEY` | Yes for Zapier | `X-CRM-API-KEY` on `POST /api/leads/import`. |
-| `OPENAI_API_KEY` | Optional | Server-side lead analysis. Blank = keyword fallback. |
+| `OPENAI_API_KEY` | Optional | Server-side lead analysis **and** Agente pipeline phrasing. Blank = keyword / rule-based fallback. Both features still use real CRM data. |
 
 Local SQLite:
 
