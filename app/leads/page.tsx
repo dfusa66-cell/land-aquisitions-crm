@@ -1,21 +1,18 @@
+import { DbStatusBanner } from "@/components/db-status-banner";
 import { LeadsClient } from "@/components/leads/leads-client";
 import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { loadLeadsList } from "@/lib/leads-query";
 import { resolvePipelineStage } from "@/lib/pipeline";
 import { dealProfit, offer40, offer50 } from "@/lib/underwriting";
 
 export default async function LeadsPage() {
   await requireUser();
-  const leads = await prisma.lead.findMany({
-    include: {
-      messages: { orderBy: [{ timestamp: "desc" }, { createdAt: "desc" }], take: 1 },
-      analyses: { orderBy: { createdAt: "desc" }, take: 1 },
-      suggestedReplies: { orderBy: { createdAt: "desc" }, take: 1 }
-    },
-    orderBy: [{ updatedAt: "desc" }]
-  });
+  const { data: leads, schemaDrift, dbError } = await loadLeadsList();
 
-  return <LeadsClient leads={leads.map((lead) => {
+  return (
+    <LeadsClient
+      notice={<DbStatusBanner schemaDrift={schemaDrift} dbError={dbError} />}
+      leads={leads.map((lead) => {
     const pipelineStage = resolvePipelineStage(lead);
     return {
       id: lead.id,
@@ -46,5 +43,7 @@ export default async function LeadsPage() {
       requiresHumanAttention: lead.analyses[0]?.requiresHumanAttention ?? false,
       hasSuggestedReply: lead.suggestedReplies.length > 0
     };
-  })} />;
+  })}
+    />
+  );
 }

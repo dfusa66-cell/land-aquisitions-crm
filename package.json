@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "build:vercel": "prisma generate --schema=prisma/schema.postgres.prisma && next build",
+    "vercel-build": "pnpm build:vercel",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/db-errors.test.ts lib/leads-query.test.ts lib/leads-query.fallback.test.ts",
     "db:push": "prisma db push",
     "db:push:postgres": "prisma db push --schema=prisma/schema.postgres.prisma",
     "db:seed:demo": "tsx prisma/seed.ts"
