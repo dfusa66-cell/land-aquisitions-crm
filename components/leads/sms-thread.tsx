@@ -106,7 +106,7 @@ export function SmsThread({
   }
 
   return (
-    <section className="flex min-h-[650px] flex-col overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm">
+    <section className="flex h-[min(680px,calc(100vh-11rem))] min-h-[540px] flex-col overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm">
       <div className="border-b border-black/10 bg-gradient-to-r from-grove to-moss px-4 py-3 text-white">
         <div className="flex items-center justify-between gap-3">
           <div>
