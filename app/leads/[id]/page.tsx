@@ -1,10 +1,11 @@
 import { AlertTriangle, Copy, ExternalLink } from "lucide-react";
+import { DbStatusBanner } from "@/components/db-status-banner";
 import { Shell } from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
 import { formatMoney, sellerDisplayName } from "@/lib/lead-utils";
+import { loadLeadWorkspace } from "@/lib/leads-query";
 import { PIPELINE_LABELS, PIPELINE_STAGES, resolvePipelineStage } from "@/lib/pipeline";
-import { prisma } from "@/lib/prisma";
 import { dealProfit, offer40, offer50, resolvePurchasePrice, underwritingBreakdown } from "@/lib/underwriting";
 import { markSent, replyFeedback, updateLead } from "./actions";
 
@@ -12,15 +13,15 @@ const statuses = ["HOT", "WARM", "FOLLOW_UP", "COLD", "DNC", "WRONG_NUMBER"];
 
 export default async function LeadDetail({ params }: { params: { id: string } }) {
   await requireUser();
-  const lead = await prisma.lead.findUnique({
-    where: { id: params.id },
-    include: {
-      messages: { orderBy: [{ timestamp: "asc" }, { createdAt: "asc" }] },
-      analyses: { orderBy: { createdAt: "desc" }, take: 1 },
-      suggestedReplies: { orderBy: { createdAt: "desc" }, take: 1 }
-    }
-  });
-  if (!lead) return null;
+  const { data: lead, schemaDrift, dbError } = await loadLeadWorkspace(params.id);
+  if (!lead) {
+    return (
+      <Shell>
+        <DbStatusBanner schemaDrift={schemaDrift} dbError={dbError} />
+        <p className="text-sm text-slate-500">Deal not found.</p>
+      </Shell>
+    );
+  }
   const analysis = lead.analyses[0];
   const suggestion = lead.suggestedReplies[0];
   const pipelineStage = resolvePipelineStage(lead);
@@ -34,6 +35,7 @@ export default async function LeadDetail({ params }: { params: { id: string } })
 
   return (
     <Shell>
+      <DbStatusBanner schemaDrift={schemaDrift} dbError={dbError} />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-moss">Land deal</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Clock, Phone, Search } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
@@ -88,7 +88,7 @@ function matchesGroup(lead: LeadCardData, group: string) {
   return stage ? lead.pipelineStage === stage : true;
 }
 
-export function LeadsClient({ leads }: { leads: LeadCardData[] }) {
+export function LeadsClient({ leads, notice }: { leads: LeadCardData[]; notice?: ReactNode }) {
   const router = useRouter();
   const params = useSearchParams();
   const urlGroup = params.get("group") ?? "all";
@@ -188,6 +188,7 @@ export function LeadsClient({ leads }: { leads: LeadCardData[] }) {
         </section>
       </aside>
       <section className="min-w-0 flex-1 p-4 sm:p-6">
+        {notice}
         <header className="mb-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { analyzeLead, toLeadStatus } from "@/lib/ai";
+import { isMissingColumnError } from "@/lib/db-errors";
 import { normalizeDirection, normalizePhone, parseDate, parseMoney, splitZapierField } from "@/lib/lead-utils";
+import { applyLandLeadDefaults, LEGACY_LEAD_SELECT, updateLeadWithSchemaFallback } from "@/lib/leads-query";
 import { nextPipelineStageOnImport } from "@/lib/pipeline";
 
 type ImportPayload = Record<string, unknown>;
@@ -19,26 +21,38 @@ export async function importLead(payload: ImportPayload) {
   const dates = splitZapierField(read(payload, "Message History Date"));
   if (contents.length !== directions.length) throw new Error("Message content and direction counts must match.");
 
-  const lead = await prisma.lead.upsert({
-    where: phone ? { phone } : { apn: apn ?? "" },
-    create: {
-      firstName: String(read(payload, "First Name") ?? "").trim() || null,
-      lastName: String(read(payload, "Last Name") ?? "").trim() || null,
-      phone,
-      acres: parseMoney(read(payload, "Parcel Acres")),
-      county: String(read(payload, "Parcel County") ?? "").trim() || null,
-      state: String(read(payload, "Parcel State") ?? "").trim() || null,
-      apn
-    },
-    update: {
-      firstName: String(read(payload, "First Name") ?? "").trim() || undefined,
-      lastName: String(read(payload, "Last Name") ?? "").trim() || undefined,
-      acres: parseMoney(read(payload, "Parcel Acres")) ?? undefined,
-      county: String(read(payload, "Parcel County") ?? "").trim() || undefined,
-      state: String(read(payload, "Parcel State") ?? "").trim() || undefined,
-      apn: apn ?? undefined
-    }
-  });
+  const leadData = {
+    firstName: String(read(payload, "First Name") ?? "").trim() || null,
+    lastName: String(read(payload, "Last Name") ?? "").trim() || null,
+    phone,
+    acres: parseMoney(read(payload, "Parcel Acres")),
+    county: String(read(payload, "Parcel County") ?? "").trim() || null,
+    state: String(read(payload, "Parcel State") ?? "").trim() || null,
+    apn
+  };
+  let lead;
+  try {
+    lead = await prisma.lead.upsert({
+      where: phone ? { phone } : { apn: apn ?? "" },
+      create: leadData,
+      update: {
+        firstName: leadData.firstName ?? undefined,
+        lastName: leadData.lastName ?? undefined,
+        acres: leadData.acres ?? undefined,
+        county: leadData.county ?? undefined,
+        state: leadData.state ?? undefined,
+        apn: leadData.apn ?? undefined
+      }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const existing = phone
+      ? await prisma.lead.findUnique({ where: { phone }, select: { id: true } })
+      : await prisma.lead.findUnique({ where: { apn: apn ?? "" }, select: { id: true } });
+    lead = existing
+      ? await prisma.lead.update({ where: { id: existing.id }, data: leadData, select: { id: true } })
+      : await prisma.lead.create({ data: leadData, select: { id: true } });
+  }
 
   for (let index = 0; index < contents.length; index += 1) {
     const content = contents[index];
@@ -71,7 +85,7 @@ export async function importLead(payload: ImportPayload) {
   const pipelineStage = nextPipelineStageOnImport({
     status,
     askingPrice: analysis.asking_price,
-    existingStage: lead.pipelineStage
+    existingStage: "pipelineStage" in lead && typeof lead.pipelineStage === "string" ? lead.pipelineStage : null
   });
 
   await prisma.aIAnalysis.create({
@@ -94,21 +108,18 @@ export async function importLead(payload: ImportPayload) {
     }
   });
 
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: {
-      status,
-      leadScore: analysis.lead_score,
-      askingPrice: analysis.asking_price,
-      sellerInterest: analysis.seller_interest,
-      motivation: analysis.motivation,
-      sentiment: analysis.sentiment,
-      negotiationStage: analysis.negotiation_stage,
-      aiSummary: analysis.summary,
-      nextAction: analysis.next_action,
-      followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null,
-      pipelineStage
-    }
+  await updateLeadWithSchemaFallback(lead.id, {
+    status,
+    leadScore: analysis.lead_score,
+    askingPrice: analysis.asking_price,
+    sellerInterest: analysis.seller_interest,
+    motivation: analysis.motivation,
+    sentiment: analysis.sentiment,
+    negotiationStage: analysis.negotiation_stage,
+    aiSummary: analysis.summary,
+    nextAction: analysis.next_action,
+    followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null,
+    pipelineStage
   });
 
   if (analysis.suggested_reply) {
@@ -118,5 +129,21 @@ export async function importLead(payload: ImportPayload) {
     await prisma.followUp.create({ data: { leadId: lead.id, dueAt: new Date(analysis.follow_up_date), note: analysis.next_action } });
   }
 
-  return prisma.lead.findUnique({ where: { id: lead.id }, include: { messages: true, analyses: { orderBy: { createdAt: "desc" }, take: 1 } } });
+  try {
+    return await prisma.lead.findUnique({
+      where: { id: lead.id },
+      include: { messages: true, analyses: { orderBy: { createdAt: "desc" }, take: 1 } }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const row = await prisma.lead.findUnique({
+      where: { id: lead.id },
+      select: {
+        ...LEGACY_LEAD_SELECT,
+        messages: true,
+        analyses: { orderBy: { createdAt: "desc" as const }, take: 1 }
+      }
+    });
+    return row ? applyLandLeadDefaults(row) : null;
+  }
 }

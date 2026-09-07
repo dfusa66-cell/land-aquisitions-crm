@@ -1,5 +1,7 @@
+import { DbStatusBanner } from "@/components/db-status-banner";
 import { Shell } from "@/components/nav";
 import { requireUser } from "@/lib/auth";
+import { formatDbError } from "@/lib/db-errors";
 import { prisma } from "@/lib/prisma";
 import { saveSettings } from "./actions";
 
@@ -13,9 +15,16 @@ const defaults = {
 
 export default async function SettingsPage() {
   await requireUser();
-  const settings = await prisma.negotiationSettings.findUnique({ where: { id: "default" } });
+  let settings = null;
+  let dbError: string | null = null;
+  try {
+    settings = await prisma.negotiationSettings.findUnique({ where: { id: "default" } });
+  } catch (error) {
+    dbError = formatDbError(error);
+  }
   return (
     <Shell>
+      <DbStatusBanner dbError={dbError} />
       <h1 className="text-2xl font-semibold">Settings</h1>
       <p className="mb-5 text-sm text-slate-500">SMS negotiation rules stay here for later agents that push underwriting packs into a deal.</p>
       <form action={saveSettings} className="grid gap-4 rounded border border-black/10 bg-white p-5 shadow-sm">

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Shell } from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
+import { DbStatusBanner } from "@/components/db-status-banner";
 import { requireUser } from "@/lib/auth";
 import { formatMoney, sellerDisplayName } from "@/lib/lead-utils";
+import { loadDashboardLeads } from "@/lib/leads-query";
 import { ACTIVE_PIPELINE_STAGES, PIPELINE_LABELS, PIPELINE_STAGES, resolvePipelineStage } from "@/lib/pipeline";
-import { prisma } from "@/lib/prisma";
 import { dealProfit, offer40, offer50 } from "@/lib/underwriting";
 
 function startOfMonth(date = new Date()) {
@@ -13,10 +14,7 @@ function startOfMonth(date = new Date()) {
 
 export default async function Dashboard() {
   await requireUser();
-  const leads = await prisma.lead.findMany({
-    include: { messages: { orderBy: { timestamp: "desc" }, take: 1 } },
-    orderBy: { updatedAt: "desc" }
-  });
+  const { data: leads, schemaDrift, dbError } = await loadDashboardLeads();
 
   const decorated = leads.map((lead) => {
     const pipelineStage = resolvePipelineStage(lead);
@@ -43,6 +41,7 @@ export default async function Dashboard() {
         <h1 className="text-3xl font-semibold">Land flipping desk</h1>
         <p className="text-sm text-slate-500">Potential profit is open-pipeline mid ARV minus purchase, drone, brokerless, 3% buyer&apos;s agent, and both closings.</p>
       </div>
+      <DbStatusBanner schemaDrift={schemaDrift} dbError={dbError} />
 
       <section className="grid gap-3 lg:grid-cols-2">
         <article className="rounded-2xl border border-moss/20 bg-white p-5 shadow-sm">

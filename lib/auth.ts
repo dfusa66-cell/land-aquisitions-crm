@@ -1,13 +1,20 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { formatDbError, isNextRedirectError } from "@/lib/db-errors";
 import { prisma } from "@/lib/prisma";
 
 const cookieName = "landcrm_user";
 
 export async function getCurrentUser() {
-  const id = cookies().get(cookieName)?.value;
-  if (!id) return null;
-  return prisma.user.findUnique({ where: { id } });
+  try {
+    const id = cookies().get(cookieName)?.value;
+    if (!id) return null;
+    return await prisma.user.findUnique({ where: { id } });
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    console.error("[auth] getCurrentUser", error);
+    return null;
+  }
 }
 
 export async function requireUser() {
@@ -28,4 +35,8 @@ export function setSession(userId: string) {
 
 export function clearSession() {
   cookies().delete(cookieName);
+}
+
+export function authFailureMessage(error: unknown) {
+  return formatDbError(error);
 }

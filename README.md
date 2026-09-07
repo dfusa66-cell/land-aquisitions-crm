@@ -93,11 +93,21 @@ OPENAI_API_KEY=""
 
 `CRM_IMPORT_API_KEY` belongs only in Vercel and Zapier. `OPENAI_API_KEY` is server-side only.
 
-After pulling schema changes, push columns to the hosted database:
+After pulling schema changes, push columns to the hosted database. This is required after the vacant-land pipeline merge (`pipelineStage`, ARV, Land Portal, profit fields). If you skip it, `/login` still renders, but sign-in or the dashboard can fail against the old Postgres schema.
 
 ```text
+# Use the same DATABASE_URL as the Vercel production project (Supabase/Postgres).
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
 pnpm db:push:postgres
 ```
+
+That command is `prisma db push --schema=prisma/schema.postgres.prisma`. It is additive (new nullable/defaulted Lead columns + `pipelineStage` index). It does not drop existing leads.
+
+If sign-in shows a database error instead of the dashboard, the usual causes are:
+
+1. Hosted schema is behind — run `pnpm db:push:postgres` with production `DATABASE_URL`.
+2. Missing/invalid `DATABASE_URL` in the Vercel project.
+3. Vercel build not using `pnpm build:vercel` (must generate the Postgres Prisma client, not SQLite).
 
 ## Local Commands
 
@@ -127,13 +137,18 @@ pnpm db:seed:demo
 
 Local development uses `prisma/schema.prisma` (SQLite) so the app runs without a hosted database.
 
-Vercel uses `prisma/schema.postgres.prisma`. Create a Supabase/Postgres database, set `DATABASE_URL`, then:
+Vercel uses `prisma/schema.postgres.prisma`. Create a Supabase/Postgres database, set `DATABASE_URL`, then push the schema **before or immediately after** deploying code that adds Lead columns:
 
 ```text
+# Must be the production connection string from Vercel → Settings → Environment Variables
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+pnpm install
 pnpm db:push:postgres
 ```
 
-Run that only when `DATABASE_URL` points at the hosted database.
+`db:push:postgres` is the only required migrate step for this repo (there is no `prisma/migrations` folder). Run it from any machine that can reach the hosted database. Do not run it against the local SQLite file.
+
+If `/login` sign-in fails with a database message, or the dashboard shows a schema-behind banner, this command is the fix.
 
 ## Vercel Development Deployment
 
