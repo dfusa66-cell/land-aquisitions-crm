@@ -53,7 +53,7 @@ export function formatDbError(error: unknown): string {
   const message = sanitizeDbMessage(raw);
 
   if (/Environment variable not found: DATABASE_URL|DATABASE_URL/i.test(message) && /not found|invalid|undefined/i.test(message)) {
-    return "DATABASE_URL is missing or invalid in the Vercel environment.";
+    return "DATABASE_URL is missing or invalid in the environment.";
   }
   if (/query engine|library for current platform|binaryTargets|engine type/i.test(message)) {
     return "Prisma query engine failed to load on the server. Redeploy so @prisma/client is not bundled by Next.js.";
