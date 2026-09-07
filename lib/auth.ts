@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { formatDbError, isNextRedirectError } from "@/lib/db-errors";
+import { formatDbError, isNextInternalError } from "@/lib/db-errors";
 import { prisma } from "@/lib/prisma";
 
 const cookieName = "landcrm_user";
@@ -11,7 +11,7 @@ export async function getCurrentUser() {
     if (!id) return null;
     return await prisma.user.findUnique({ where: { id } });
   } catch (error) {
-    if (isNextRedirectError(error)) throw error;
+    if (isNextInternalError(error)) throw error;
     console.error("[auth] getCurrentUser", error);
     return null;
   }

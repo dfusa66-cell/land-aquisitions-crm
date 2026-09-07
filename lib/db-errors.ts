@@ -1,9 +1,19 @@
-const REDIRECT_DIGEST = "NEXT_REDIRECT";
+function errorDigest(error: unknown) {
+  if (typeof error !== "object" || error === null || !("digest" in error)) return "";
+  return String((error as { digest?: unknown }).digest ?? "");
+}
 
 export function isNextRedirectError(error: unknown) {
-  if (typeof error !== "object" || error === null) return false;
-  const digest = "digest" in error ? String((error as { digest?: unknown }).digest ?? "") : "";
-  return digest.startsWith(REDIRECT_DIGEST);
+  return errorDigest(error).startsWith("NEXT_REDIRECT");
+}
+
+export function isNextInternalError(error: unknown) {
+  const digest = errorDigest(error);
+  return (
+    digest.startsWith("NEXT_REDIRECT") ||
+    digest.startsWith("NEXT_NOT_FOUND") ||
+    digest === "DYNAMIC_SERVER_USAGE"
+  );
 }
 
 export function prismaCode(error: unknown): string | null {

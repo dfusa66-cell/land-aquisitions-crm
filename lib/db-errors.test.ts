@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   formatDbError,
   isMissingColumnError,
+  isNextInternalError,
   isNextRedirectError,
   sanitizeDbMessage
 } from "./db-errors";
@@ -11,6 +12,11 @@ describe("isNextRedirectError", () => {
   it("detects Next.js redirect digests", () => {
     assert.equal(isNextRedirectError({ digest: "NEXT_REDIRECT;replace;/;307;" }), true);
     assert.equal(isNextRedirectError(new Error("boom")), false);
+  });
+
+  it("does not swallow Next.js dynamic-rendering signals", () => {
+    assert.equal(isNextInternalError({ digest: "DYNAMIC_SERVER_USAGE" }), true);
+    assert.equal(isNextInternalError({ digest: "NEXT_NOT_FOUND" }), true);
   });
 });
 
