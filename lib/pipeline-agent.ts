@@ -7,6 +7,12 @@ import {
   resolvePipelineStage,
   type PipelineStage
 } from "@/lib/pipeline";
+import {
+  isPossiblePipelineDeal,
+  looksUnderContract,
+  possiblePipelineProfit,
+  projectedPipelineProfit
+} from "@/lib/business-metrics";
 import { dealProfit, offer40, offer50 } from "@/lib/underwriting";
 
 export type LeadForAgent = {
@@ -74,6 +80,7 @@ export type PipelineSnapshot = {
   };
   countsByStage: Record<PipelineStage, number>;
   potentialProfit: number;
+  possibleProfit: number;
   closedProfitThisMonth: number;
   deals: AgentDeal[];
 };
@@ -86,6 +93,7 @@ export type AgentIntent =
   | "ready_to_close"
   | "closed_profit"
   | "potential_profit"
+  | "possible_profit"
   | "negotiation"
   | "need_price"
   | "underwritten"
@@ -187,7 +195,8 @@ export function buildPipelineSnapshot(leads: LeadForAgent[], now = new Date()): 
       followUp: deals.filter((deal) => deal.status === "FOLLOW_UP" || Boolean(deal.followUpDate)).length
     },
     countsByStage,
-    potentialProfit: active.reduce((sum, deal) => sum + (deal.profit ?? 0), 0),
+    potentialProfit: projectedPipelineProfit(deals),
+    possibleProfit: possiblePipelineProfit(deals),
     closedProfitThisMonth: closedThisMonth.reduce((sum, deal) => sum + (deal.profit ?? 0), 0),
     deals
   };
@@ -196,7 +205,7 @@ export function buildPipelineSnapshot(leads: LeadForAgent[], now = new Date()): 
 export function detectLanguage(question: string): "es" | "en" {
   if (/[áéíóúñ¿¡]/i.test(question)) return "es";
   if (
-    /\b(cu[aá]ntos?|cu[aá]ntas?|ganancia|ganancias|cerrados?|ofertas?|listos?|calientes?|etapas?|negociaci[oó]n|muertos?|activos?|potencial|este mes|resumen|dime|qui[eé]nes?|hay|ayuda|c[oó]mo|est[aá]n|vendedor|vendedores)\b/i.test(
+    /\b(cu[aá]ntos?|cu[aá]ntas?|ganancia|ganancias|cerrados?|ofertas?|listos?|calientes?|etapas?|negociaci[oó]n|muertos?|activos?|potencial|posible|este mes|resumen|dime|qui[eé]nes?|hay|ayuda|c[oó]mo|est[aá]n|vendedor|vendedores)\b/i.test(
       question
     )
   ) {
@@ -211,7 +220,10 @@ export function detectIntent(question: string): AgentIntent {
   if (/\b(closed profit|ganancia(s)? (cerrad|este mes)|profit.*(month|cerrad)|cerrad.*(mes|profit)|how much.*(close|cerr))\b/i.test(q)) {
     return "closed_profit";
   }
-  if (/\b(potential|ganancia potencial|open pipeline|profit.*(active|open)|activos?.*(ganancia|profit))\b/i.test(q)) {
+  if (/\b(possible profit|ganancia posible|possible deals|en trabajo|open pipeline|profit.*(active|open|work)|activos?.*(ganancia|profit))\b/i.test(q)) {
+    return "possible_profit";
+  }
+  if (/\b(potential|ganancia potencial|under contract|pipeline projected|bought|inventario)\b/i.test(q)) {
     return "potential_profit";
   }
   if (/\b(ready to close|listos? (para )?cerrar|ready.?close)\b/i.test(q)) return "ready_to_close";
@@ -338,20 +350,20 @@ function answerForIntent(intent: AgentIntent, snapshot: PipelineSnapshot, langua
   if (intent === "help") {
     const text =
       language === "es"
-        ? "Soy el Agente pipeline de Sell Your Land to Diego. Pregúntame por conteos por etapa, deals HOT, ofertas enviadas, ready to close, negociación, dead, ganancia potencial o ganancia cerrada este mes. También puedo buscar un vendedor, condado o APN que ya exista en el CRM. No invento deals."
-        : "I am the Sell Your Land to Diego pipeline agent. Ask for stage counts, HOT deals, offers out, ready to close, negotiation, dead, potential profit, or closed profit this month. I can also look up a seller, county, or APN that already exists in the CRM. I do not invent deals.";
+        ? "Soy el Agente pipeline de Sell Your Land to Diego. Pregúntame por conteos por etapa, deals HOT, ofertas enviadas, ready to close, negociación, dead, ganancia potencial (bajo contrato), ganancia posible (en trabajo) o ganancia cerrada este mes. También puedo buscar un vendedor, condado o APN que ya exista en el CRM. No invento deals."
+        : "I am the Sell Your Land to Diego pipeline agent. Ask for stage counts, HOT deals, offers out, ready to close, negotiation, dead, potential profit (under contract), possible profit (in-work), or closed profit this month. I can also look up a seller, county, or APN that already exists in the CRM. I do not invent deals.";
     return { text, citations: [] };
   }
 
   if (intent === "counts_by_stage" || intent === "overview") {
     const text =
       language === "es"
-        ? `Resumen del pipeline (datos reales del CRM, ${t.all} deal${t.all === 1 ? "" : "s"}):\n\n${stageLines(snapshot)}\n\nActivos: ${t.active} · HOT: ${t.hot} · Ofertas enviadas: ${t.offersOut} · Ready to close: ${t.readyToClose}\nGanancia potencial (pipeline abierto): ${formatMoney(snapshot.potentialProfit)}\nGanancia cerrada este mes (desde ${new Date(snapshot.monthStart).toLocaleDateString()}): ${formatMoney(snapshot.closedProfitThisMonth)} (${t.closedThisMonth} cerrado${t.closedThisMonth === 1 ? "" : "s"}).`
-        : `Pipeline snapshot from live CRM leads (${t.all} deal${t.all === 1 ? "" : "s"}):\n\n${stageLines(snapshot)}\n\nActive: ${t.active} · HOT: ${t.hot} · Offers out: ${t.offersOut} · Ready to close: ${t.readyToClose}\nPotential profit (open pipeline): ${formatMoney(snapshot.potentialProfit)}\nClosed profit this month (since ${new Date(snapshot.monthStart).toLocaleDateString()}): ${formatMoney(snapshot.closedProfitThisMonth)} (${t.closedThisMonth} cerrado${t.closedThisMonth === 1 ? "" : "s"}).`;
+        ? `Resumen del pipeline (datos reales del CRM, ${t.all} deal${t.all === 1 ? "" : "s"}):\n\n${stageLines(snapshot)}\n\nActivos: ${t.active} · HOT: ${t.hot} · Ofertas enviadas: ${t.offersOut} · Ready to close: ${t.readyToClose}\nGanancia potencial (bajo contrato / comprado): ${formatMoney(snapshot.potentialProfit)}\nGanancia posible (en trabajo): ${formatMoney(snapshot.possibleProfit)}\nGanancia cerrada este mes (desde ${new Date(snapshot.monthStart).toLocaleDateString()}): ${formatMoney(snapshot.closedProfitThisMonth)} (${t.closedThisMonth} cerrado${t.closedThisMonth === 1 ? "" : "s"}).`
+        : `Pipeline snapshot from live CRM leads (${t.all} deal${t.all === 1 ? "" : "s"}):\n\n${stageLines(snapshot)}\n\nActive: ${t.active} · HOT: ${t.hot} · Offers out: ${t.offersOut} · Ready to close: ${t.readyToClose}\nPotential profit (under contract / bought): ${formatMoney(snapshot.potentialProfit)}\nPossible profit (in-work pipeline): ${formatMoney(snapshot.possibleProfit)}\nClosed profit this month (since ${new Date(snapshot.monthStart).toLocaleDateString()}): ${formatMoney(snapshot.closedProfitThisMonth)} (${t.closedThisMonth} cerrado${t.closedThisMonth === 1 ? "" : "s"}).`;
     return { text, citations: citationsFor(snapshot.deals) };
   }
 
-  const buckets: Record<Exclude<AgentIntent, "overview" | "counts_by_stage" | "help" | "lookup" | "closed_profit" | "potential_profit">, AgentDeal[]> = {
+  const buckets: Record<Exclude<AgentIntent, "overview" | "counts_by_stage" | "help" | "lookup" | "closed_profit" | "potential_profit" | "possible_profit">, AgentDeal[]> = {
     hot: snapshot.deals.filter((deal) => deal.status === "HOT"),
     offers_out: snapshot.deals.filter((deal) => deal.pipelineStage === "OFERTA_ENVIADA"),
     ready_to_close: snapshot.deals.filter((deal) => deal.pipelineStage === "READY_TO_CLOSE"),
@@ -377,12 +389,21 @@ function answerForIntent(intent: AgentIntent, snapshot: PipelineSnapshot, langua
   }
 
   if (intent === "potential_profit") {
-    const active = buckets.active;
+    const inventory = snapshot.deals.filter(looksUnderContract);
     const text =
       language === "es"
-        ? `Ganancia potencial en pipeline abierto: ${formatMoney(snapshot.potentialProfit)} · ${t.active} deal${t.active === 1 ? "" : "s"} activos (no incluye Cerrado ni Dead).\n\n${listDeals(active, language)}`
-        : `Potential profit in the open pipeline: ${formatMoney(snapshot.potentialProfit)} · ${t.active} active deal${t.active === 1 ? "" : "s"} (excludes Cerrado and Dead).\n\n${listDeals(active, language)}`;
-    return { text, citations: citationsFor(active) };
+        ? `Ganancia potencial (bajo contrato / comprado — salida proyectada): ${formatMoney(snapshot.potentialProfit)} · ${inventory.length} deal${inventory.length === 1 ? "" : "s"} en inventario.\n\n${listDeals(inventory, language)}`
+        : `Potential profit (under contract / bought — projected exit): ${formatMoney(snapshot.potentialProfit)} · ${inventory.length} inventory deal${inventory.length === 1 ? "" : "s"}.\n\n${listDeals(inventory, language)}`;
+    return { text, citations: citationsFor(inventory) };
+  }
+
+  if (intent === "possible_profit") {
+    const inWork = snapshot.deals.filter(isPossiblePipelineDeal);
+    const text =
+      language === "es"
+        ? `Ganancia posible (deals en trabajo, aún no comprados): ${formatMoney(snapshot.possibleProfit)} · ${inWork.length} deal${inWork.length === 1 ? "" : "s"} (Lead SC, Precio/Ask, Underwritten, Oferta, Negociación).\n\n${listDeals(inWork, language)}`
+        : `Possible profit (deals still in work, not purchased yet): ${formatMoney(snapshot.possibleProfit)} · ${inWork.length} deal${inWork.length === 1 ? "" : "s"} (Lead SC, Precio/Ask, Underwritten, Offer, Negociación).\n\n${listDeals(inWork, language)}`;
+    return { text, citations: citationsFor(inWork) };
   }
 
   if (intent !== "lookup") {
@@ -447,6 +468,7 @@ function snapshotForModel(snapshot: PipelineSnapshot) {
     totals: snapshot.totals,
     countsByStage: snapshot.countsByStage,
     potentialProfit: snapshot.potentialProfit,
+    possibleProfit: snapshot.possibleProfit,
     closedProfitThisMonth: snapshot.closedProfitThisMonth,
     deals: snapshot.deals.map((deal) => ({
       id: deal.id,

@@ -20,7 +20,8 @@ const SUGGESTIONS_ES = [
   "Ofertas enviadas",
   "Ready to close",
   "Ganancia cerrada este mes",
-  "Ganancia potencial"
+  "Ganancia potencial",
+  "Ganancia posible"
 ];
 
 function newId() {
@@ -94,6 +95,7 @@ export function PipelineAgentChat({
             <Stat label="Ofertas enviadas" value={snapshot.totals.offersOut} />
             <Stat label="Ready to close" value={snapshot.totals.readyToClose} />
             <Stat label="Ganancia potencial" value={formatMoney(snapshot.potentialProfit)} />
+            <Stat label="Ganancia posible" value={formatMoney(snapshot.possibleProfit)} />
             <Stat label="Cerrado este mes" value={formatMoney(snapshot.closedProfitThisMonth)} />
           </dl>
         </section>

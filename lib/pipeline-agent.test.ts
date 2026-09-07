@@ -100,7 +100,8 @@ describe("buildPipelineSnapshot", () => {
     assert.equal(snapshot.countsByStage.UNDERWRITTEN, 1);
     assert.equal(snapshot.closedProfitThisMonth, 31490);
     assert.equal(snapshot.deals.find((deal) => deal.id === "omar")?.profit, 22065);
-    assert.equal(snapshot.potentialProfit, 39950 + 29595 + 22065);
+    assert.equal(snapshot.potentialProfit, 22065);
+    assert.equal(snapshot.possibleProfit, 39950 + 29595);
     assert.deepEqual(
       snapshot.deals.map((deal) => deal.name).sort(),
       ["Bruce Ng", "Caleb Moore", "Elena Cruz", "Marta Reyes", "Omar Hale"]
@@ -117,6 +118,7 @@ describe("detectLanguage / detectIntent", () => {
     assert.equal(detectIntent("ready to close"), "ready_to_close");
     assert.equal(detectIntent("ganancia cerrada este mes"), "closed_profit");
     assert.equal(detectIntent("ganancia potencial"), "potential_profit");
+    assert.equal(detectIntent("ganancia posible"), "possible_profit");
     assert.equal(detectIntent("deals calientes"), "hot");
   });
 });
@@ -159,6 +161,19 @@ describe("answerWithRules", () => {
     const answer = answerWithRules("ganancia cerrada este mes", snapshot);
     assert.match(answer.text, /\$31,490/);
     assert.match(answer.text, /Elena Cruz/);
+  });
+
+  it("keeps potential profit on inventory and possible profit on in-work deals", () => {
+    const snapshot = buildPipelineSnapshot(leads, now);
+    const potential = answerWithRules("ganancia potencial", snapshot);
+    assert.match(potential.text, /\$22,065/);
+    assert.match(potential.text, /Omar Hale/);
+    assert.doesNotMatch(potential.text, /Marta Reyes/);
+    const possible = answerWithRules("ganancia posible", snapshot);
+    assert.match(possible.text, /\$69,545/);
+    assert.match(possible.text, /Marta Reyes/);
+    assert.match(possible.text, /Caleb Moore/);
+    assert.doesNotMatch(possible.text, /Omar Hale/);
   });
 
   it("looks up an existing seller and refuses unknown names", () => {

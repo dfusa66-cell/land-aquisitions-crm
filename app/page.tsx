@@ -3,7 +3,13 @@ import { Shell } from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
 import { DbStatusBanner } from "@/components/db-status-banner";
 import { requireUser } from "@/lib/auth";
-import { loadBusinessMetrics, projectedPipelineProfit } from "@/lib/business-metrics";
+import {
+  inventoryLeads,
+  loadBusinessMetrics,
+  possiblePipelineLeads,
+  possiblePipelineProfit,
+  projectedPipelineProfit
+} from "@/lib/business-metrics";
 import { formatMoney, sellerDisplayName } from "@/lib/lead-utils";
 import { loadDashboardLeads } from "@/lib/leads-query";
 import { ACTIVE_PIPELINE_STAGES, PIPELINE_LABELS, PIPELINE_STAGES, resolvePipelineStage } from "@/lib/pipeline";
@@ -34,11 +40,13 @@ export default async function Dashboard() {
     const closedOn = lead.closedAt ?? lead.updatedAt;
     return closedOn >= monthStart;
   });
-  const potentialProfit = active.reduce((sum, lead) => sum + (lead.profit ?? 0), 0);
+  const inventory = inventoryLeads(decorated);
+  const inWork = possiblePipelineLeads(decorated);
+  const potentialProfit = projectedPipelineProfit(decorated, metrics.pipelineProjected);
+  const possibleProfit = possiblePipelineProfit(decorated);
   const closedProfit = closedThisMonth.reduce((sum, lead) => sum + (lead.profit ?? 0), 0);
   const ready = decorated.filter((lead) => lead.pipelineStage === "READY_TO_CLOSE");
   const needsAsk = decorated.filter((lead) => lead.pipelineStage === "LEAD_SC" || lead.pipelineStage === "PRECIO_ASK");
-  const pipelineProjected = projectedPipelineProfit(decorated, metrics.pipelineProjected);
 
   return (
     <Shell>
@@ -48,23 +56,40 @@ export default async function Dashboard() {
       </div>
       <DbStatusBanner schemaDrift={schemaDrift || metricsResult.schemaDrift} dbError={dbError ?? metricsResult.dbError} />
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <article className="relative overflow-hidden rounded-3xl bg-grove px-6 py-6 text-white shadow-[0_18px_40px_-24px_rgba(23,50,36,0.75)] ring-1 ring-white/10 lg:col-span-1">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article className="relative overflow-hidden rounded-3xl bg-grove px-6 py-6 text-white shadow-[0_18px_40px_-24px_rgba(23,50,36,0.75)] ring-1 ring-white/10">
           <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-16 right-8 h-28 w-28 rounded-full bg-black/10" />
           <div className="relative">
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Profit total</div>
             <div className="mt-1 text-sm font-medium text-emerald-100">Net profit (negocio)</div>
             <div className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{formatMoney(metrics.netProfitAllTime)}</div>
-            <p className="mt-4 border-t border-white/15 pt-3 text-sm text-emerald-100">
-              Pipeline projected <span className="font-semibold text-white">{formatMoney(pipelineProjected)}</span>
-            </p>
+            <p className="mt-4 border-t border-white/15 pt-3 text-sm text-emerald-100">{metrics.note}</p>
           </div>
         </article>
         <article className="rounded-3xl border border-moss/15 bg-white p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Potential profit</div>
+          <div className="mt-1 text-sm font-medium text-moss">Ganancia potencial</div>
           <div className="mt-3 text-4xl font-semibold tracking-tight text-moss">{formatMoney(potentialProfit)}</div>
-          <p className="mt-3 text-sm leading-6 text-slate-500">{active.length} active deals · mid ARV and purchase or 50% offer</p>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Under contract / bought — projected exit
+            <span className="mt-1 block text-slate-400">
+              {inventory.length > 0
+                ? `${inventory.length} deal${inventory.length === 1 ? "" : "s"} already in (under contract / ready to close)`
+                : "Saved pipeline projected until an under-contract / bought deal is in the CRM"}
+            </span>
+          </p>
+        </article>
+        <article className="rounded-3xl border border-gold/25 bg-[#fbf8f1] p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Possible profit</div>
+          <div className="mt-1 text-sm font-medium text-gold">Ganancia posible · en trabajo</div>
+          <div className="mt-3 text-4xl font-semibold tracking-tight text-ink">{formatMoney(possibleProfit)}</div>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Deals still in work, not purchased yet
+            <span className="mt-1 block text-slate-400">
+              {inWork.length} in-work deal{inWork.length === 1 ? "" : "s"} · mid ARV − costs (excludes Cerrado and under contract)
+            </span>
+          </p>
         </article>
         <article className="rounded-3xl border border-black/10 bg-ink p-6 text-white shadow-[0_12px_30px_-20px_rgba(23,32,38,0.55)]">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">Closed profit this month</div>

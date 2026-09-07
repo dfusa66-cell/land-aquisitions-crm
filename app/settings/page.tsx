@@ -40,7 +40,7 @@ export default async function SettingsPage() {
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Business P&amp;L</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Agents can update these without shipping a frontend change.
+            Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Potential profit uses the fallback here when no under-contract / bought deal is in the CRM. Possible profit is always live in-work mid ARV math.
           </p>
           <p className="mt-2 text-sm font-medium text-grove">
             Current net {formatMoney(metrics.netProfitAllTime)} · {metrics.note}
@@ -55,7 +55,11 @@ export default async function SettingsPage() {
           <MoneyField name="landPortalAffiliateIncome" label="Land Portal affiliate" defaultValue={metrics.landPortalAffiliateIncome} />
           <MoneyField name="affiliateIncome" label="Affiliate income (combined)" defaultValue={metrics.affiliateIncome} />
           <MoneyField name="marketingSpend" label="Marketing spend" defaultValue={metrics.marketingSpend} />
-          <MoneyField name="pipelineProjected" label="Pipeline projected profit" defaultValue={metrics.pipelineProjected} />
+          <MoneyField
+            name="pipelineProjected"
+            label="Potential profit fallback (under contract / bought)"
+            defaultValue={metrics.pipelineProjected}
+          />
         </div>
         <button className="w-fit rounded-xl bg-grove px-4 py-2.5 text-sm font-semibold text-white shadow-sm">Save business P&amp;L</button>
       </form>

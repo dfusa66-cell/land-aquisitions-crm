@@ -19,7 +19,20 @@ export const DIEGO_PNL_DEFAULTS = {
 
 export type BusinessMetricsValues = typeof DIEGO_PNL_DEFAULTS;
 
-export const PROJECTED_PROFIT_STAGES: PipelineStage[] = ["NEGOCIACION", "READY_TO_CLOSE"];
+/** Inventory Diego is already in: bought, under contract, or about to sell. */
+export const PROJECTED_PROFIT_STAGES: PipelineStage[] = ["READY_TO_CLOSE"];
+
+export type ProfitLead = {
+  pipelineStage?: string | null;
+  actualProfit?: number | null;
+  profit?: number | null;
+  purchasePrice?: number | null;
+  askingPrice?: number | null;
+  arvMid?: number | null;
+  nextAction?: string | null;
+  underwritingPackNote?: string | null;
+  aiSummary?: string | null;
+};
 
 export function computeAffiliateIncome(input: {
   affiliateIncome?: number | null;
@@ -59,40 +72,52 @@ export function parseProfitHint(...notes: Array<string | null | undefined>) {
   return null;
 }
 
-export function looksUnderContract(lead: {
-  pipelineStage?: string | null;
-  nextAction?: string | null;
-  underwritingPackNote?: string | null;
-  aiSummary?: string | null;
-}) {
-  if (lead.pipelineStage && PROJECTED_PROFIT_STAGES.includes(lead.pipelineStage as PipelineStage)) {
+export function looksUnderContract(lead: ProfitLead) {
+  const stage = lead.pipelineStage;
+  if (stage === "UNDER_CONTRACT" || (stage && PROJECTED_PROFIT_STAGES.includes(stage as PipelineStage))) {
     return true;
   }
   const blob = [lead.pipelineStage, lead.nextAction, lead.underwritingPackNote, lead.aiSummary].filter(Boolean).join(" ");
-  return /under[_\s-]?contract/i.test(blob);
+  return /under[_\s-]?contract|\balready bought\b|\bbought \/|\babout to sell\b/i.test(blob);
 }
 
-export function projectedPipelineProfit(
-  leads: Array<{
-    pipelineStage?: string | null;
-    actualProfit?: number | null;
-    profit?: number | null;
-    nextAction?: string | null;
-    underwritingPackNote?: string | null;
-    aiSummary?: string | null;
-  }>,
-  fallback = DIEGO_PNL_DEFAULTS.pipelineProjected
-) {
-  const matches = leads.filter(looksUnderContract);
-  const sum = matches.reduce((total, lead) => {
-    if (lead.actualProfit != null && Number.isFinite(lead.actualProfit)) {
-      return total + lead.actualProfit;
-    }
-    const hinted = parseProfitHint(lead.nextAction, lead.underwritingPackNote, lead.aiSummary);
-    if (hinted != null) return total + hinted;
-    return total + (lead.profit ?? 0);
-  }, 0);
+export function isPossiblePipelineDeal(lead: ProfitLead) {
+  const stage = lead.pipelineStage;
+  if (stage === "CERRADO" || stage === "DEAD") return false;
+  return !looksUnderContract(lead);
+}
+
+/** Exit profit for inventory Diego already owns or has under contract. */
+export function inventoryDealProfit(lead: ProfitLead) {
+  if (lead.actualProfit != null && Number.isFinite(lead.actualProfit)) {
+    return lead.actualProfit;
+  }
+  const hinted = parseProfitHint(lead.nextAction, lead.underwritingPackNote, lead.aiSummary);
+  if (hinted != null) return hinted;
+  if (lead.profit != null && Number.isFinite(lead.profit)) return lead.profit;
+  const purchase = lead.purchasePrice;
+  const sale = lead.askingPrice ?? lead.arvMid;
+  if (purchase != null && Number.isFinite(purchase) && sale != null && Number.isFinite(sale)) {
+    return sale - purchase;
+  }
+  return 0;
+}
+
+export function inventoryLeads<T extends ProfitLead>(leads: T[]) {
+  return leads.filter(looksUnderContract);
+}
+
+export function possiblePipelineLeads<T extends ProfitLead>(leads: T[]) {
+  return leads.filter(isPossiblePipelineDeal);
+}
+
+export function projectedPipelineProfit(leads: ProfitLead[], fallback = DIEGO_PNL_DEFAULTS.pipelineProjected) {
+  const sum = inventoryLeads(leads).reduce((total, lead) => total + inventoryDealProfit(lead), 0);
   return sum > 0 ? sum : fallback;
+}
+
+export function possiblePipelineProfit(leads: ProfitLead[]) {
+  return possiblePipelineLeads(leads).reduce((total, lead) => total + (lead.profit ?? 0), 0);
 }
 
 function parseAffiliateSplit(note: string | null | undefined) {
