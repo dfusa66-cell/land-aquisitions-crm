@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
+  Bot,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -17,6 +18,7 @@ import {
 
 const nav = [
   ["Dashboard", "/", LayoutDashboard],
+  ["Agente pipeline", "/agent", Bot],
   ["Pipeline", "/leads?view=pipeline", Columns3],
   ["All deals", "/leads?group=all&view=pipeline", MapPin],
   ["Ready to close", "/leads?group=ready_to_close&view=pipeline", CheckCircle2],
@@ -53,6 +55,7 @@ export function MainSidebar() {
           const url = new URL(href, "http://local");
           const active =
             (href === "/" && pathname === "/") ||
+            (href === "/agent" && pathname.startsWith("/agent")) ||
             (href.startsWith("/leads") && pathname === "/leads" && (
               (url.searchParams.get("group") && url.searchParams.get("group") === group) ||
               (!url.searchParams.get("group") && href.includes("view=pipeline") && view === "pipeline" && !group) ||
@@ -82,5 +85,39 @@ export function MainSidebar() {
         </div>
       </div>
     </aside>
+  );
+}
+
+export function MobileNav() {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const group = params.get("group");
+  const view = params.get("view");
+
+  return (
+    <nav className="flex gap-2 overflow-x-auto border-b border-black/10 bg-[#10241b] px-3 py-2 text-white lg:hidden">
+      {nav.map(([label, href]) => {
+        const url = new URL(href, "http://local");
+        const active =
+          (href === "/" && pathname === "/") ||
+          (href === "/agent" && pathname.startsWith("/agent")) ||
+          (href.startsWith("/leads") && pathname === "/leads" && (
+            (url.searchParams.get("group") && url.searchParams.get("group") === group) ||
+            (!url.searchParams.get("group") && href.includes("view=pipeline") && view === "pipeline" && !group) ||
+            (href === "/leads?group=all&view=pipeline" && (group === "all" || (!group && view !== "pipeline")))
+          ));
+        return (
+          <Link
+            key={label}
+            href={href}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              active ? "bg-white text-[#10241b]" : "text-white/75 hover:bg-white/10"
+            }`}
+          >
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

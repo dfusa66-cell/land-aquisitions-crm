@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Clock, Phone, Search } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { LeadScoreBadge } from "@/components/leads/lead-score-badge";
-import { MainSidebar } from "@/components/leads/main-sidebar";
+import { MainSidebar, MobileNav } from "@/components/leads/main-sidebar";
 import { PipelineBoard } from "@/components/leads/pipeline-board";
 import { formatMoney, sellerDisplayName } from "@/lib/lead-utils";
 import { PIPELINE_LABELS, type PipelineStage } from "@/lib/pipeline";
@@ -153,6 +153,9 @@ export function LeadsClient({ leads, notice }: { leads: LeadCardData[]; notice?:
   return (
     <main className="flex min-h-screen bg-[#f4f6f2] text-[#172026]">
       <MainSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+      <MobileNav />
+      <div className="flex min-w-0 flex-1">
       <aside className="hidden w-72 shrink-0 border-r border-black/10 bg-white p-5 xl:block">
         <div className="text-xs font-bold tracking-wide text-slate-500">LAND PIPELINE</div>
         <section className="mt-6">
@@ -254,6 +257,8 @@ export function LeadsClient({ leads, notice }: { leads: LeadCardData[]; notice?:
         {visible.length > 0 && view === "cards" && <LeadCardGrid leads={visible} />}
         {visible.length > 0 && view === "list" && <LeadList leads={visible} />}
       </section>
+      </div>
+      </div>
     </main>
   );
 }
