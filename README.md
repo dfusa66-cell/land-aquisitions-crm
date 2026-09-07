@@ -7,7 +7,7 @@ Live: https://land-ai-crm-real.vercel.app/
 ## What this app does
 
 - Private login for a single user (`diego@example.com` / `demo1234` locally).
-- Dashboard with a green **Profit total** card (all-time business net profit from `BusinessMetrics`), **Potential profit** (under contract / bought — `pipelineProjected` or UC inventory exit), **Possible profit** (in-work mid ARV speculation), and **closed profit this month**.
+- Dashboard with a green **Profit total** card (all-time business net profit from `BusinessMetrics` — label + number only, no `note` / affiliate breakdown), **Pipeline Profit** (under contract / bought — `pipelineProjected` or UC inventory exit), **Profit in the works** (in-work mid ARV speculation), and **closed profit this month**.
 - **Agente pipeline** (`/agent`) — Spanish-friendly chat that answers from live Prisma leads (stage counts, HOT deals, ofertas enviadas, ready to close, closed profit). Optional OpenAI polish; rule-based + retrieval if `OPENAI_API_KEY` is blank.
 - Kanban pipeline: Lead SC → Precio/Ask → Underwritten → Oferta enviada → Negociación → Ready to close → Cerrado / Dead.
 - Deal workspace with contact, parcel, Land Portal, ARV, computed 40%/50% offers, and estimated profit.

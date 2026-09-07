@@ -40,7 +40,7 @@ export default async function SettingsPage() {
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Business P&amp;L</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Potential profit uses the fallback here when no under-contract / bought deal is in the CRM. Possible profit is always live in-work mid ARV math.
+            Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Pipeline Profit uses the fallback here when no under-contract / bought deal is in the CRM. Profit in the works is always live in-work mid ARV math. The green Profit total card shows only the net number — not this note or the affiliate line items.
           </p>
           <p className="mt-2 text-sm font-medium text-grove">
             Current net {formatMoney(metrics.netProfitAllTime)} · {metrics.note}
@@ -57,7 +57,7 @@ export default async function SettingsPage() {
           <MoneyField name="marketingSpend" label="Marketing spend" defaultValue={metrics.marketingSpend} />
           <MoneyField
             name="pipelineProjected"
-            label="Potential profit fallback (under contract / bought)"
+            label="Pipeline Profit fallback (under contract / bought)"
             defaultValue={metrics.pipelineProjected}
           />
         </div>
