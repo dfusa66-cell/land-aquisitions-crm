@@ -314,7 +314,7 @@ export function retrieveDeals(question: string, snapshot: PipelineSnapshot): Age
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
-      const hits = tokens.filter((token) => haystack.includes(token)).length;
+      const hits = tokens.filter((token) => new RegExp(`(^|[^a-z0-9])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`).test(haystack)).length;
       return { deal, hits };
     })
     .filter((row) => row.hits > 0)

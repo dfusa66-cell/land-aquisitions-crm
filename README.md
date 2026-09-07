@@ -38,6 +38,7 @@ Offers are always 40% and 50% of mid ARV. Optional `actualProfit` overrides the 
 ```text
 app/
   api/leads/import/route.ts   Zapier import API
+  api/agent/route.ts          Authenticated pipeline-agent Q&A
   agent/page.tsx              Agente pipeline chat
   leads/page.tsx              Pipeline / cards / list
   leads/[id]/page.tsx         Deal workspace

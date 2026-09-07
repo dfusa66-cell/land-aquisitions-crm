@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bot, Loader2, Send, Sparkles } from "lucide-react";
-import { askPipelineAgent } from "@/app/agent/actions";
 import { formatMoney } from "@/lib/lead-utils";
 import { PIPELINE_LABELS, PIPELINE_STAGES } from "@/lib/pipeline";
 import type { AgentAnswer, PipelineSnapshot } from "@/lib/pipeline-agent";
@@ -47,44 +46,41 @@ export function PipelineAgentChat({
   ]);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, pending]);
 
-  function send(question: string) {
+  async function send(question: string) {
     const trimmed = question.trim();
     if (!trimmed || pending) return;
     setError(null);
     setInput("");
-    const userId = newId();
-    setMessages((current) => [...current, { id: userId, role: "user", text: trimmed }]);
-    startTransition(async () => {
-      const result = await askPipelineAgent(trimmed);
-      if ("error" in result) {
-        setError(result.error);
-        setMessages((current) => [
-          ...current,
-          {
-            id: newId(),
-            role: "assistant",
-            text: result.error
-          }
-        ]);
+    setPending(true);
+    setMessages((current) => [...current, { id: newId(), role: "user", text: trimmed }]);
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed })
+      });
+      const result = (await response.json()) as AgentAnswer | { error: string };
+      if (!response.ok || "error" in result) {
+        const message = "error" in result ? result.error : "No pude consultar los leads.";
+        setError(message);
+        setMessages((current) => [...current, { id: newId(), role: "assistant", text: message }]);
         return;
       }
-      setMessages((current) => [
-        ...current,
-        {
-          id: newId(),
-          role: "assistant",
-          text: result.text,
-          answer: result
-        }
-      ]);
-    });
+      setMessages((current) => [...current, { id: newId(), role: "assistant", text: result.text, answer: result }]);
+    } catch {
+      const message = "No pude consultar los leads. Intenta de nuevo.";
+      setError(message);
+      setMessages((current) => [...current, { id: newId(), role: "assistant", text: message }]);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -114,7 +110,7 @@ export function PipelineAgentChat({
         </section>
       </aside>
 
-      <section className="flex min-h-[640px] flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
+      <section className="flex min-h-[560px] flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 px-4 py-3">
           <div className="flex items-center gap-2 font-semibold">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-moss text-white">
@@ -174,7 +170,7 @@ export function PipelineAgentChat({
                 type="button"
                 onClick={() => send(suggestion)}
                 disabled={pending}
-                className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-moss/40 hover:text-moss disabled:opacity-50"
+                className="rounded-full border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-moss/40 hover:text-moss disabled:opacity-50"
               >
                 {suggestion}
               </button>

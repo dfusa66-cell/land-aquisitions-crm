@@ -169,6 +169,7 @@ describe("answerWithRules", () => {
     assert.match(found.text, /Valencia/);
     const missing = answerWithRules("What about Pat Seller in Fake County?", snapshot);
     assert.doesNotMatch(missing.text, /Pat Seller/);
+    assert.doesNotMatch(missing.text, /Rina Patel/);
     assert.match(missing.text, /could not find|No encontré/i);
   });
 
