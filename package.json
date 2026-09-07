@@ -9,7 +9,7 @@
     "vercel-build": "pnpm build:vercel",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test lib/db-errors.test.ts lib/leads-query.test.ts lib/leads-query.fallback.test.ts lib/pipeline-agent.test.ts lib/business-metrics.test.ts",
+    "test": "tsx --test lib/db-errors.test.ts lib/leads-query.test.ts lib/leads-query.fallback.test.ts lib/pipeline-agent.test.ts lib/business-metrics.test.ts lib/import-messages.test.ts lib/lead-utils.test.ts",
     "db:push": "prisma db push",
     "db:push:postgres": "prisma db push --schema=prisma/schema.postgres.prisma",
     "db:seed:demo": "tsx prisma/seed.ts"

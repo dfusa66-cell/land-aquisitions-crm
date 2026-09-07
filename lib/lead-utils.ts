@@ -50,3 +50,13 @@ export function formatMoney(value: number | null | undefined, fallback = "—") 
 export function sellerDisplayName(lead: { firstName?: string | null; lastName?: string | null }) {
   return `${lead.firstName ?? ""} ${lead.lastName ?? ""}`.trim() || "Unknown seller";
 }
+
+export function formatPhoneDisplay(value?: string | null) {
+  const normalized = normalizePhone(value);
+  if (!normalized) return value?.trim() || "No phone";
+  const digits = normalized.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return normalized;
+}

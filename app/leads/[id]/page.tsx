@@ -1,5 +1,7 @@
-import { AlertTriangle, Copy, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { DbStatusBanner } from "@/components/db-status-banner";
+import { AiAnalysisPanel } from "@/components/leads/ai-analysis-panel";
+import { SmsThread } from "@/components/leads/sms-thread";
 import { Shell } from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
@@ -7,7 +9,7 @@ import { formatMoney, sellerDisplayName } from "@/lib/lead-utils";
 import { loadLeadWorkspace } from "@/lib/leads-query";
 import { PIPELINE_LABELS, PIPELINE_STAGES, resolvePipelineStage } from "@/lib/pipeline";
 import { dealProfit, offer40, offer50, resolvePurchasePrice, underwritingBreakdown } from "@/lib/underwriting";
-import { markSent, replyFeedback, updateLead } from "./actions";
+import { updateLead } from "./actions";
 
 const statuses = ["HOT", "WARM", "FOLLOW_UP", "COLD", "DNC", "WRONG_NUMBER"];
 
@@ -149,73 +151,37 @@ export default async function LeadDetail({ params }: { params: { id: string } })
           <button className="w-full rounded bg-moss px-4 py-2 text-sm font-semibold text-white">Save deal</button>
         </form>
 
-        <section className="flex min-h-[650px] flex-col rounded-xl border border-black/10 bg-white shadow-sm">
-          <div className="border-b px-4 py-3 font-semibold">Conversation</div>
-          <div className="flex-1 space-y-3 overflow-y-auto bg-field/50 p-4">
-            {lead.messages.map((message) => (
-              <div key={message.id} className={message.direction === "SENT" ? "ml-auto max-w-[78%]" : "mr-auto max-w-[78%]"}>
-                <div className={`rounded px-4 py-3 text-sm ${message.direction === "SENT" ? "bg-moss text-white" : "bg-white text-ink shadow-sm"}`}>
-                  <div className="mb-1 text-xs opacity-70">{message.direction === "SENT" ? "Diego" : "Seller"}</div>
-                  {message.content}
-                </div>
-                <div className="mt-1 text-xs text-slate-500">{message.timestamp?.toLocaleString() ?? ""}</div>
-              </div>
-            ))}
-          </div>
-          <div className="border-t p-4">
-            <label className="text-xs font-semibold text-slate-500">AI Suggested Reply</label>
-            <textarea defaultValue={suggestion?.aiSuggestedReply ?? ""} className="mt-1 h-24 w-full rounded border px-3 py-2 text-sm" />
-            <form action={suggestion ? markSent.bind(null, suggestion.id, lead.id) : undefined} className="mt-2 flex flex-wrap gap-2">
-              <input name="actualReply" placeholder="Paste Diego's actual sent reply" className="min-w-64 flex-1 rounded border px-3 py-2 text-sm" />
-              <button type="button" className="inline-flex items-center gap-2 rounded border px-3 py-2 text-sm"><Copy size={15} /> Copy Reply</button>
-              <button className="rounded bg-ink px-3 py-2 text-sm font-semibold text-white">Mark as Sent</button>
-            </form>
-          </div>
-        </section>
+        <SmsThread
+          leadId={lead.id}
+          sellerName={sellerDisplayName(lead)}
+          phone={lead.phone}
+          suggestedReply={suggestion?.aiSuggestedReply ?? analysis?.suggestedReply ?? ""}
+          suggestionId={suggestion?.id ?? null}
+          markedSentAt={suggestion?.markedSentAt?.toISOString() ?? null}
+          messages={lead.messages.map((message) => ({
+            id: message.id,
+            content: message.content,
+            direction: message.direction,
+            timestamp: message.timestamp?.toISOString() ?? null,
+            source: message.source
+          }))}
+        />
 
-        <aside className="rounded-xl border border-black/10 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 font-semibold">AI Deal Brain</h2>
-          {analysis?.requiresHumanAttention && (
-            <div className="mb-3 flex gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <AlertTriangle size={18} /> Human review required before using this reply.
-            </div>
-          )}
-          <div className="mb-3 rounded bg-ink p-4 text-white">
-            <div className="text-sm opacity-70">Lead Score</div>
-            <div className="text-3xl font-semibold">{lead.leadScore} / 100</div>
-          </div>
-          <div className="mb-4 rounded border border-moss/20 bg-field p-3">
-            <div className="text-xs font-semibold uppercase text-slate-500">AI Description</div>
-            <div className="mt-1 text-sm leading-6">{lead.aiSummary ?? "No AI description has been generated yet."}</div>
-          </div>
-          {[
-            ["Classification", lead.status],
-            ["Seller Interest", lead.sellerInterest],
-            ["Motivation", lead.motivation],
-            ["Sentiment", lead.sentiment],
-            ["Asking Price", lead.askingPrice ? formatMoney(lead.askingPrice) : "-"],
-            ["Negotiation Stage", lead.negotiationStage],
-            ["Next Action", lead.nextAction],
-            ["AI Notes", analysis?.reasoningSummary]
-          ].map(([label, value]) => (
-            <div key={label} className="mb-3">
-              <div className="text-xs font-semibold uppercase text-slate-500">{label}</div>
-              <div className="text-sm">{value ?? "-"}</div>
-            </div>
-          ))}
-          {suggestion && (
-            <div className="mt-4 border-t pt-4">
-              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Shadow Mode Feedback</div>
-              <div className="flex gap-2">
-                {(["CORRECT", "ALMOST", "WRONG"] as const).map((value) => (
-                  <form key={value} action={replyFeedback.bind(null, suggestion.id, lead.id, value)}>
-                    <button className="rounded border px-3 py-1.5 text-xs font-semibold hover:bg-field">{value}</button>
-                  </form>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
+        <AiAnalysisPanel
+          leadId={lead.id}
+          leadScore={lead.leadScore}
+          status={lead.status}
+          aiSummary={lead.aiSummary}
+          nextAction={lead.nextAction}
+          motivation={lead.motivation}
+          sellerInterest={lead.sellerInterest}
+          sentiment={lead.sentiment}
+          askingPrice={lead.askingPrice}
+          negotiationStage={lead.negotiationStage}
+          analysis={analysis ?? null}
+          suggestion={suggestion ?? null}
+          hasOpenAi={Boolean(process.env.OPENAI_API_KEY)}
+        />
       </div>
     </Shell>
   );

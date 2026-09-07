@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { analyzeLead, toLeadStatus } from "@/lib/ai";
+import { analyzeLead } from "@/lib/ai";
+import { persistLeadAnalysis, negotiationRulesFromSettings } from "@/lib/apply-analysis";
 import { isMissingColumnError } from "@/lib/db-errors";
+import { upsertLeadMessage } from "@/lib/import-messages";
 import { normalizeDirection, normalizePhone, parseDate, parseMoney, splitZapierField } from "@/lib/lead-utils";
-import { applyLandLeadDefaults, LEGACY_LEAD_SELECT, updateLeadWithSchemaFallback } from "@/lib/leads-query";
-import { nextPipelineStageOnImport } from "@/lib/pipeline";
+import { applyLandLeadDefaults, LEGACY_LEAD_SELECT } from "@/lib/leads-query";
 
 type ImportPayload = Record<string, unknown>;
 
@@ -58,76 +59,22 @@ export async function importLead(payload: ImportPayload) {
     const content = contents[index];
     if (!content) continue;
     const timestamp = parseDate(dates[index]) ?? new Date(0);
-    await prisma.message.upsert({
-      where: {
-        leadId_content_direction_timestamp: {
-          leadId: lead.id,
-          content,
-          direction: normalizeDirection(directions[index] ?? ""),
-          timestamp
-        }
-      },
-      update: {},
-      create: {
-        leadId: lead.id,
-        content,
-        direction: normalizeDirection(directions[index] ?? ""),
-        timestamp,
-        source: "SmarterContact"
-      }
+    await upsertLeadMessage(lead.id, {
+      content,
+      direction: normalizeDirection(directions[index] ?? ""),
+      timestamp,
+      source: "SmarterContact"
     });
   }
 
   const settings = await prisma.negotiationSettings.findUnique({ where: { id: "default" } });
   const messages = await prisma.message.findMany({ where: { leadId: lead.id }, orderBy: [{ timestamp: "asc" }, { createdAt: "asc" }] });
-  const analysis = await analyzeLead(messages, settings ? Object.values(settings).join("\n") : "");
-  const status = toLeadStatus(analysis.classification);
-  const pipelineStage = nextPipelineStageOnImport({
-    status,
-    askingPrice: analysis.asking_price,
-    existingStage: "pipelineStage" in lead && typeof lead.pipelineStage === "string" ? lead.pipelineStage : null
-  });
-
-  await prisma.aIAnalysis.create({
-    data: {
-      leadId: lead.id,
-      classification: status,
-      leadScore: analysis.lead_score,
-      sellerInterest: analysis.seller_interest,
-      motivation: analysis.motivation,
-      sentiment: analysis.sentiment,
-      askingPrice: analysis.asking_price,
-      negotiationStage: analysis.negotiation_stage,
-      summary: analysis.summary,
-      nextAction: analysis.next_action,
-      suggestedReply: analysis.suggested_reply,
-      followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null,
-      requiresHumanAttention: analysis.requires_human_attention,
-      reasoningSummary: analysis.reasoning_summary,
-      rawJson: JSON.stringify(analysis)
-    }
-  });
-
-  await updateLeadWithSchemaFallback(lead.id, {
-    status,
-    leadScore: analysis.lead_score,
-    askingPrice: analysis.asking_price,
-    sellerInterest: analysis.seller_interest,
-    motivation: analysis.motivation,
-    sentiment: analysis.sentiment,
-    negotiationStage: analysis.negotiation_stage,
-    aiSummary: analysis.summary,
-    nextAction: analysis.next_action,
-    followUpDate: analysis.follow_up_date ? new Date(analysis.follow_up_date) : null,
-    pipelineStage
-  });
-
-  if (analysis.suggested_reply) {
-    await prisma.suggestedReply.create({ data: { leadId: lead.id, aiSuggestedReply: analysis.suggested_reply } });
-  }
-  if (status === "FOLLOW_UP" && analysis.follow_up_date) {
-    await prisma.followUp.create({ data: { leadId: lead.id, dueAt: new Date(analysis.follow_up_date), note: analysis.next_action } });
-  }
+  const analysis = await analyzeLead(messages, negotiationRulesFromSettings(settings));
+  await persistLeadAnalysis(
+    lead.id,
+    analysis,
+    "pipelineStage" in lead && typeof lead.pipelineStage === "string" ? lead.pipelineStage : null
+  );
 
   try {
     return await prisma.lead.findUnique({
