@@ -53,16 +53,16 @@ export function PipelineBoard({ leads }: { leads: PipelineCard[] }) {
               const id = event.dataTransfer.getData("text/lead-id") || dragging;
               if (id) void move(id, stage);
             }}
-            className="flex w-72 shrink-0 flex-col rounded-xl border border-black/10 bg-white/80 p-3"
+            className="flex w-72 shrink-0 flex-col rounded-2xl border border-black/8 bg-white/90 p-3.5 shadow-sm ring-1 ring-black/[0.03]"
           >
-            <header className="mb-3">
+            <header className="mb-3 border-b border-black/5 pb-3">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">{PIPELINE_LABELS[stage]}</h3>
-                <span className="rounded-full bg-field px-2 py-0.5 text-xs text-slate-600">{column.length}</span>
+                <h3 className="text-sm font-semibold tracking-tight">{PIPELINE_LABELS[stage]}</h3>
+                <span className="rounded-full bg-field px-2 py-0.5 text-xs font-medium text-slate-600">{column.length}</span>
               </div>
               <p className="mt-1 text-[11px] leading-4 text-slate-500">{PIPELINE_HINTS[stage]}</p>
               {columnProfit !== 0 && (
-                <p className="mt-1 text-xs font-medium text-moss">{formatMoney(columnProfit)} est.</p>
+                <p className="mt-1 text-xs font-medium text-grove">{formatMoney(columnProfit)} est.</p>
               )}
             </header>
             <div className="space-y-2">
@@ -75,7 +75,7 @@ export function PipelineBoard({ leads }: { leads: PipelineCard[] }) {
                     event.dataTransfer.setData("text/lead-id", lead.id);
                     event.dataTransfer.effectAllowed = "move";
                   }}
-                  className={`rounded-lg border border-black/10 bg-white p-3 shadow-sm ${saving === lead.id ? "opacity-60" : ""}`}
+                  className={`rounded-xl border border-black/8 bg-white p-3 shadow-sm transition hover:border-moss/30 ${saving === lead.id ? "opacity-60" : ""}`}
                 >
                   <Link href={`/leads/${lead.id}`} className="block">
                     <div className="font-semibold">{sellerDisplayName(lead)}</div>

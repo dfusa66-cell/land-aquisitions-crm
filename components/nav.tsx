@@ -17,12 +17,12 @@ const items = [
 export function AppNav() {
   const pathname = usePathname();
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-black/10 bg-white px-5 py-6 lg:block">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded bg-moss text-white text-sm font-bold">DF</div>
+    <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-black/8 bg-white/95 px-5 py-7 backdrop-blur lg:block">
+      <div className="mb-9 flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-grove text-sm font-bold text-white shadow-sm ring-1 ring-black/5">DF</div>
         <div>
-          <div className="font-semibold">Sell Your Land to Diego</div>
-          <div className="text-xs text-slate-500">Vacant land flipping CRM</div>
+          <div className="text-sm font-semibold leading-tight tracking-tight">Sell Your Land to Diego</div>
+          <div className="text-[11px] text-slate-500">Vacant land flipping CRM</div>
         </div>
       </div>
       <nav className="space-y-1">
@@ -32,8 +32,8 @@ export function AppNav() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded px-3 py-2 text-sm font-medium ${
-                active ? "bg-field text-moss" : "text-slate-700 hover:bg-field"
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                active ? "bg-field text-grove" : "text-slate-600 hover:bg-field hover:text-ink"
               }`}
             >
               <Icon size={17} /> {label}
@@ -50,7 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <main className="min-h-screen lg:pl-64">
       <AppNav />
       <MobileNav />
-      <div className="px-4 py-5 sm:px-6 lg:px-8">{children}</div>
+      <div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
     </main>
   );
 }
