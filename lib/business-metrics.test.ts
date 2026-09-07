@@ -4,10 +4,13 @@ import {
   computeAffiliateIncome,
   computeNetProfit,
   DIEGO_PNL_DEFAULTS,
+  inventoryDealProfit,
+  isPossiblePipelineDeal,
   looksUnderContract,
   metricsFromFormData,
   normalizeBusinessMetrics,
   parseProfitHint,
+  possiblePipelineProfit,
   projectedPipelineProfit
 } from "./business-metrics";
 
@@ -97,6 +100,50 @@ describe("projected pipeline profit", () => {
     assert.equal(
       projectedPipelineProfit([{ pipelineStage: "LEAD_SC", actualProfit: null, profit: 9000 }]),
       26000
+    );
+  });
+
+  it("does not treat open-pipeline mid ARV as potential profit", () => {
+    const leads = [
+      { pipelineStage: "UNDERWRITTEN", actualProfit: null, profit: 39950 },
+      { pipelineStage: "OFERTA_ENVIADA", actualProfit: null, profit: 29595 },
+      { pipelineStage: "NEGOCIACION", actualProfit: null, profit: 18000 },
+      {
+        pipelineStage: "READY_TO_CLOSE",
+        actualProfit: null,
+        profit: 22065,
+        nextAction: "UNDER_CONTRACT projected $26,000"
+      }
+    ];
+    assert.equal(projectedPipelineProfit(leads), 26000);
+    assert.equal(possiblePipelineProfit(leads), 39950 + 29595 + 18000);
+    assert.equal(isPossiblePipelineDeal(leads[0]), true);
+    assert.equal(isPossiblePipelineDeal(leads[2]), true);
+    assert.equal(isPossiblePipelineDeal(leads[3]), false);
+  });
+
+  it("uses purchase → ask/sale spread when actualProfit and notes are missing", () => {
+    assert.equal(
+      inventoryDealProfit({
+        pipelineStage: "READY_TO_CLOSE",
+        actualProfit: null,
+        profit: null,
+        purchasePrice: 20000,
+        askingPrice: 45000
+      }),
+      25000
+    );
+    assert.equal(
+      projectedPipelineProfit([
+        {
+          pipelineStage: "UNDER_CONTRACT",
+          actualProfit: null,
+          profit: null,
+          purchasePrice: 20000,
+          arvMid: 48000
+        }
+      ]),
+      28000
     );
   });
 });
