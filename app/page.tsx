@@ -44,10 +44,7 @@ export default async function Dashboard() {
     <Shell>
       <div className="mb-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">Sell Your Land to Diego</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Land flipping desk</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-          All-time net profit is the business P&amp;L (land + affiliates + coaching − marketing). Potential profit is open-pipeline mid ARV minus purchase, drone, brokerless, 3% buyer&apos;s agent, and both closings.
-        </p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Sell Your Land to Diego CRM</h1>
       </div>
       <DbStatusBanner schemaDrift={schemaDrift || metricsResult.schemaDrift} dbError={dbError ?? metricsResult.dbError} />
 
@@ -59,14 +56,7 @@ export default async function Dashboard() {
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Profit total</div>
             <div className="mt-1 text-sm font-medium text-emerald-100">Net profit (negocio)</div>
             <div className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{formatMoney(metrics.netProfitAllTime)}</div>
-            <p className="mt-3 text-sm leading-6 text-white/75">
-              {metrics.note}
-              {metrics.updatedAt ? ` · updated ${metrics.updatedAt.toLocaleDateString()}` : ""}
-            </p>
-            <p className="mt-3 text-xs leading-5 text-white/65">
-              Land {formatMoney(metrics.landProfitClosed)} · Affiliates {formatMoney(metrics.affiliateIncome)} · Coaching {formatMoney(metrics.coachingIncome)} − Marketing {formatMoney(metrics.marketingSpend)}
-            </p>
-            <p className="mt-3 border-t border-white/15 pt-3 text-sm text-emerald-100">
+            <p className="mt-4 border-t border-white/15 pt-3 text-sm text-emerald-100">
               Pipeline projected <span className="font-semibold text-white">{formatMoney(pipelineProjected)}</span>
             </p>
           </div>
