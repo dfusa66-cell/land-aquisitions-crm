@@ -19,8 +19,8 @@ export default async function AgentPage() {
         <MobileNav />
         <div className="px-4 py-5 sm:px-6 lg:px-8">
           <div className="mb-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-moss">Sell Your Land to Diego</p>
-            <h1 className="text-3xl font-semibold">Agente pipeline</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">Sell Your Land to Diego</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Agente pipeline</h1>
             <p className="text-sm text-slate-500">
               Pregunta en español o inglés. Las respuestas salen de leads reales en Prisma — no inventa deals, precios ni etapas.
             </p>

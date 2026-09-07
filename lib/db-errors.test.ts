@@ -35,6 +35,7 @@ describe("isMissingColumnError", () => {
 describe("formatDbError", () => {
   it("explains schema drift and sanitizes URLs", () => {
     assert.match(formatDbError({ code: "P2022", message: "x" }), /pnpm db:push:postgres/);
+    assert.match(formatDbError({ code: "P2021" }), /BusinessMetrics/);
     assert.match(formatDbError({ code: "P1001" }), /DATABASE_URL/);
     assert.equal(
       sanitizeDbMessage("bad postgresql://user:secret@host:5432/db?sslmode=require"),

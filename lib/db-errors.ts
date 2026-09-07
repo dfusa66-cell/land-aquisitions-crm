@@ -43,7 +43,7 @@ export function formatDbError(error: unknown): string {
     return "The production database is missing land-pipeline columns. From a machine that can reach the hosted DB, run: pnpm db:push:postgres";
   }
   if (code === "P2021") {
-    return "A required database table is missing. From a machine that can reach the hosted DB, run: pnpm db:push:postgres";
+    return "A required database table is missing (Lead or BusinessMetrics). From a machine that can reach the hosted DB, run: pnpm db:push:postgres";
   }
   if (code === "P1001" || code === "P1002" || code === "P1017" || code === "P1000") {
     return "Cannot reach the database. Check DATABASE_URL in Vercel (host, password, and ?sslmode=require).";

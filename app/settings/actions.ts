@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { metricsFromFormData, saveBusinessMetricsValues } from "@/lib/business-metrics";
 import { prisma } from "@/lib/prisma";
 
 export async function saveSettings(formData: FormData) {
@@ -22,5 +23,11 @@ export async function saveSettings(formData: FormData) {
       offerStrategy: String(formData.get("offerStrategy") ?? "")
     }
   });
+  revalidatePath("/settings");
+}
+
+export async function saveBusinessMetrics(formData: FormData) {
+  await saveBusinessMetricsValues(metricsFromFormData(formData));
+  revalidatePath("/");
   revalidatePath("/settings");
 }

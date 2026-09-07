@@ -195,9 +195,9 @@ export function LeadsClient({ leads, notice }: { leads: LeadCardData[]; notice?:
         <header className="mb-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-moss">Sell Your Land to Diego</p>
-              <h1 className="text-3xl font-semibold">Vacant land pipeline</h1>
-              <p className="text-sm text-slate-500">{visible.length} deals · drag cards between stages or open a deal to underwrite</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">Sell Your Land to Diego</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight">Vacant land pipeline</h1>
+              <p className="mt-1 text-sm text-slate-500">{visible.length} deals · drag cards between stages or open a deal to underwrite</p>
             </div>
             <div className="flex rounded border bg-white p-1 text-xs font-semibold xl:hidden">
               {(["pipeline", "cards", "list"] as const).map((item) => (

@@ -7,7 +7,7 @@ Live: https://land-ai-crm-real.vercel.app/
 ## What this app does
 
 - Private login for a single user (`diego@example.com` / `demo1234` locally).
-- Dashboard that compares **potential profit** (open pipeline) vs **closed profit this month**.
+- Dashboard with a green **Profit total** card (all-time business net profit from `BusinessMetrics`) plus **potential profit** (open pipeline) and **closed profit this month**.
 - **Agente pipeline** (`/agent`) — Spanish-friendly chat that answers from live Prisma leads (stage counts, HOT deals, ofertas enviadas, ready to close, closed profit). Optional OpenAI polish; rule-based + retrieval if `OPENAI_API_KEY` is blank.
 - Kanban pipeline: Lead SC → Precio/Ask → Underwritten → Oferta enviada → Negociación → Ready to close → Cerrado / Dead.
 - Deal workspace with contact, parcel, Land Portal, ARV, computed 40%/50% offers, and estimated profit.
@@ -43,13 +43,14 @@ app/
   leads/page.tsx              Pipeline / cards / list
   leads/[id]/page.tsx         Deal workspace
   login/page.tsx              Private login
-  settings/page.tsx           Negotiation settings
+  settings/page.tsx           Business P&L + negotiation settings
 components/
   nav.tsx                     App shell
   leads/pipeline-board.tsx    Kanban columns
 lib/
   pipeline.ts                 Land stages
   underwriting.ts             Offer + profit math
+  business-metrics.ts         All-time P&L defaults, load/save, projected pipeline profit
   ai.ts                       OpenAI analysis and local fallback
   pipeline-agent.ts           Grounded pipeline Q&A (rules + optional OpenAI)
   auth.ts                     Cookie session helpers
@@ -97,7 +98,7 @@ OPENAI_API_KEY=""
 
 `CRM_IMPORT_API_KEY` belongs only in Vercel and Zapier. `OPENAI_API_KEY` is server-side only.
 
-After pulling schema changes, push columns to the hosted database. This is required after the vacant-land pipeline merge (`pipelineStage`, ARV, Land Portal, profit fields). If you skip it, `/login` still renders, but sign-in or the dashboard can fail against the old Postgres schema.
+After pulling schema changes, push columns to the hosted database. This is required after the vacant-land pipeline merge (`pipelineStage`, ARV, Land Portal, profit fields). Production already has `BusinessMetrics` (`netProfitAllTime`, `landProfitClosed`, `coachingIncome`, `affiliateIncome`, `marketingSpend`, `pipelineProjected`, `note`). Prisma mirrors those names — do not drop or recreate the table. If the table is missing locally, the Profit total card falls back to Diego's Aug 2025–Sep 2026 defaults.
 
 ```text
 # Use the same DATABASE_URL as the Vercel production project (Supabase/Postgres).
@@ -105,7 +106,7 @@ export DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=requi
 pnpm db:push:postgres
 ```
 
-That command is `prisma db push --schema=prisma/schema.postgres.prisma`. It is additive (new nullable/defaulted Lead columns + `pipelineStage` index). It does not drop existing leads.
+That command is `prisma db push --schema=prisma/schema.postgres.prisma`. It is additive (new nullable/defaulted Lead columns + `pipelineStage` index + `BusinessMetrics`). It does not drop existing leads.
 
 If sign-in shows a database error instead of the dashboard, the usual causes are:
 

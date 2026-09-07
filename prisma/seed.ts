@@ -8,6 +8,28 @@ async function main() {
     update: {},
     create: { email: "diego@example.com", name: "Diego", passwordHash: await hash("demo1234", 10) }
   });
+  await prisma.businessMetrics.upsert({
+    where: { id: "default" },
+    update: {
+      netProfitAllTime: 207090,
+      landProfitClosed: 182000,
+      coachingIncome: 25000,
+      affiliateIncome: 18090,
+      marketingSpend: 18000,
+      pipelineProjected: 26000,
+      note: "Aug 2025–Sep 2026 · SC 7000 · Land Portal 11090"
+    },
+    create: {
+      id: "default",
+      netProfitAllTime: 207090,
+      landProfitClosed: 182000,
+      coachingIncome: 25000,
+      affiliateIncome: 18090,
+      marketingSpend: 18000,
+      pipelineProjected: 26000,
+      note: "Aug 2025–Sep 2026 · SC 7000 · Land Portal 11090"
+    }
+  });
   await prisma.negotiationSettings.upsert({
     where: { id: "default" },
     update: {},
@@ -124,7 +146,7 @@ async function main() {
       arvBest: 61000,
       purchasePrice: 26000,
       droneCost: 225,
-      nextAction: "Title and cash-to-close."
+      nextAction: "UNDER_CONTRACT — title and cash-to-close. Projected profit ~$26,000."
     }
   });
 }

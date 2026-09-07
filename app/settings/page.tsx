@@ -1,9 +1,11 @@
 import { DbStatusBanner } from "@/components/db-status-banner";
 import { Shell } from "@/components/nav";
 import { requireUser } from "@/lib/auth";
+import { loadBusinessMetrics } from "@/lib/business-metrics";
 import { formatDbError } from "@/lib/db-errors";
+import { formatMoney } from "@/lib/lead-utils";
 import { prisma } from "@/lib/prisma";
-import { saveSettings } from "./actions";
+import { saveBusinessMetrics, saveSettings } from "./actions";
 
 const defaults = {
   negotiationStyle: "Short, direct, respectful SMS. Sound like a real land investor, not a chatbot.",
@@ -22,20 +24,73 @@ export default async function SettingsPage() {
   } catch (error) {
     dbError = formatDbError(error);
   }
+  const metricsResult = await loadBusinessMetrics();
+  const metrics = metricsResult.data;
+
   return (
     <Shell>
-      <DbStatusBanner dbError={dbError} />
-      <h1 className="text-2xl font-semibold">Settings</h1>
-      <p className="mb-5 text-sm text-slate-500">SMS negotiation rules stay here for later agents that push underwriting packs into a deal.</p>
-      <form action={saveSettings} className="grid gap-4 rounded border border-black/10 bg-white p-5 shadow-sm">
+      <DbStatusBanner schemaDrift={metricsResult.schemaDrift} dbError={dbError ?? metricsResult.dbError} />
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">Sell Your Land to Diego</p>
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight">Settings</h1>
+      <p className="mb-6 mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+        Business P&amp;L feeds the green Profit total card. SMS negotiation rules stay here for later agents that push underwriting packs into a deal.
+      </p>
+
+      <form action={saveBusinessMetrics} className="mb-6 grid gap-4 rounded-3xl border border-moss/15 bg-white p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Business P&amp;L</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Agents can update these without shipping a frontend change.
+          </p>
+          <p className="mt-2 text-sm font-medium text-grove">
+            Current net {formatMoney(metrics.netProfitAllTime)} · {metrics.note}
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <MoneyField name="netProfitAllTime" label="Net profit (negocio)" defaultValue={metrics.netProfitAllTime} />
+          <Field name="note" label="Note / period" defaultValue={metrics.note} />
+          <MoneyField name="landProfitClosed" label="Closed land profit" defaultValue={metrics.landProfitClosed} />
+          <MoneyField name="coachingIncome" label="Coaching income" defaultValue={metrics.coachingIncome} />
+          <MoneyField name="scAffiliateIncome" label="SC affiliate" defaultValue={metrics.scAffiliateIncome} />
+          <MoneyField name="landPortalAffiliateIncome" label="Land Portal affiliate" defaultValue={metrics.landPortalAffiliateIncome} />
+          <MoneyField name="affiliateIncome" label="Affiliate income (combined)" defaultValue={metrics.affiliateIncome} />
+          <MoneyField name="marketingSpend" label="Marketing spend" defaultValue={metrics.marketingSpend} />
+          <MoneyField name="pipelineProjected" label="Pipeline projected profit" defaultValue={metrics.pipelineProjected} />
+        </div>
+        <button className="w-fit rounded-xl bg-grove px-4 py-2.5 text-sm font-semibold text-white shadow-sm">Save business P&amp;L</button>
+      </form>
+
+      <form action={saveSettings} className="grid gap-4 rounded-3xl border border-black/8 bg-white p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Negotiation rules</h2>
+          <p className="mt-1 text-sm text-slate-500">Used by later SMS / underwriting-pack agents.</p>
+        </div>
         {Object.entries(defaults).map(([key, fallback]) => (
           <label key={key} className="block text-sm font-semibold">
             {key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
-            <textarea name={key} defaultValue={(settings as any)?.[key] ?? fallback} className="mt-2 h-28 w-full rounded border px-3 py-2 text-sm font-normal" />
+            <textarea name={key} defaultValue={(settings as Record<string, string> | null)?.[key] ?? fallback} className="mt-2 h-28 w-full rounded-xl border border-black/10 px-3 py-2 text-sm font-normal" />
           </label>
         ))}
-        <button className="w-fit rounded bg-moss px-4 py-2 text-sm font-semibold text-white">Save settings</button>
+        <button className="w-fit rounded-xl bg-moss px-4 py-2.5 text-sm font-semibold text-white shadow-sm">Save settings</button>
       </form>
     </Shell>
+  );
+}
+
+function Field({ name, label, defaultValue }: { name: string; label: string; defaultValue: string }) {
+  return (
+    <label className="block text-sm font-semibold">
+      {label}
+      <input name={name} defaultValue={defaultValue} className="mt-2 w-full rounded-xl border border-black/10 px-3 py-2 text-sm font-normal" />
+    </label>
+  );
+}
+
+function MoneyField({ name, label, defaultValue }: { name: string; label: string; defaultValue: number }) {
+  return (
+    <label className="block text-sm font-semibold">
+      {label}
+      <input name={name} type="number" step="1" defaultValue={defaultValue} className="mt-2 w-full rounded-xl border border-black/10 px-3 py-2 text-sm font-normal" />
+    </label>
   );
 }
