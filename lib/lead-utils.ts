@@ -37,3 +37,16 @@ export function toTitleStatus(status: string) {
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+export function formatMoney(value: number | null | undefined, fallback = "—") {
+  if (value == null || Number.isNaN(value)) return fallback;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+export function sellerDisplayName(lead: { firstName?: string | null; lastName?: string | null }) {
+  return `${lead.firstName ?? ""} ${lead.lastName ?? ""}`.trim() || "Unknown seller";
+}

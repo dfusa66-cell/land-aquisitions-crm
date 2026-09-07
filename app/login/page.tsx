@@ -20,7 +20,8 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
   return (
     <main className="grid min-h-screen place-items-center bg-field px-4">
       <form action={login} className="w-full max-w-sm rounded border border-black/10 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Land Acquisition CRM</h1>
+        <p className="text-xs font-semibold uppercase tracking-wide text-moss">Sell Your Land to Diego</p>
+        <h1 className="text-2xl font-semibold">Land flipping CRM</h1>
         <p className="mt-2 text-sm text-slate-500">Sign in with diego@example.com / demo1234</p>
         {searchParams.error && <p className="mt-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">Invalid login.</p>}
         <label className="mt-5 block text-sm font-medium">Email</label>

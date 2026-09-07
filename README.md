@@ -1,46 +1,77 @@
-# Land Acquisition CRM
+# Sell Your Land to Diego
 
-Private V1 CRM for importing SmarterContact lead conversations through Zapier, reconstructing SMS threads, analyzing seller intent, and prioritizing land acquisition follow-up.
+Private CRM for vacant-land flipping. Import SmarterContact conversations through Zapier, underwrite parcels, and move deals through a land-specific pipeline.
 
-## What Was Built
+Live: https://land-ai-crm-real.vercel.app/
 
-- Private login for a single user, structured so users can expand later.
-- Dashboard with acquisition pipeline metrics and recent leads.
-- Leads table with status filters, search, AI score sorting, AI description, last message, and next action.
-- Lead detail workspace with editable seller, property, pricing, and guardrail fields.
-- Chronological SMS conversation reconstruction using message direction by index.
-- AI Deal Brain with lead classification, score, motivation, sentiment, summary, next action, warning flag, and suggested reply.
-- Shadow Mode for AI suggested reply, Diego's actual reply, and feedback: correct, almost, wrong.
-- Protected Zapier import endpoint at `POST /api/leads/import`.
-- Prisma schema for `User`, `Lead`, `Message`, `AIAnalysis`, `FollowUp`, `SuggestedReply`, and `NegotiationSettings`.
-- Optional demo seed data for local UI testing only.
+## What this app does
+
+- Private login for a single user (`diego@example.com` / `demo1234` locally).
+- Dashboard that compares **potential profit** (open pipeline) vs **closed profit this month**.
+- Kanban pipeline: Lead SC → Precio/Ask → Underwritten → Oferta enviada → Negociación → Ready to close → Cerrado / Dead.
+- Deal workspace with contact, parcel, Land Portal, ARV, computed 40%/50% offers, and estimated profit.
+- Chronological SMS reconstruction plus AI Deal Brain (OpenAI or local keyword fallback).
+- Protected Zapier import at `POST /api/leads/import`.
+- Stub fields for a later agent to push underwriting packs onto a deal.
+
+## Land pipeline & underwriting
+
+Each deal keeps the original AI temperature (`HOT`, `WARM`, …) and a separate `pipelineStage`.
+
+Estimated profit:
+
+```text
+mid ARV
+− purchase (or 50% of mid ARV if purchase is blank)
+− drone ($150–$250, default $200)
+− brokerless ($150)
+− 3% buyer’s agent (of ARV)
+− $1,000 buy closing
+− $1,000 sell closing
+```
+
+Offers are always 40% and 50% of mid ARV. Optional `actualProfit` overrides the estimate on closed deals.
 
 ## Project Structure
 
 ```text
 app/
   api/leads/import/route.ts   Zapier import API
-  leads/page.tsx              Leads table
-  leads/[id]/page.tsx         Lead workspace
+  leads/page.tsx              Pipeline / cards / list
+  leads/[id]/page.tsx         Deal workspace
   login/page.tsx              Private login
   settings/page.tsx           Negotiation settings
 components/
-  nav.tsx                     App shell and navigation
-  status-badge.tsx            Lead status badges
+  nav.tsx                     App shell
+  leads/pipeline-board.tsx    Kanban columns
 lib/
+  pipeline.ts                 Land stages
+  underwriting.ts             Offer + profit math
   ai.ts                       OpenAI analysis and local fallback
   auth.ts                     Cookie session helpers
-  import-lead.ts              Import, dedupe, message reconstruction, analysis
-  lead-utils.ts               Normalization helpers
-  prisma.ts                   Prisma client
+  import-lead.ts              Import, dedupe, analysis
 prisma/
-  schema.prisma               Data model
-  seed.ts                     Optional demo data seed
+  schema.prisma               Local SQLite model
+  schema.postgres.prisma      Vercel / Supabase model
 ```
 
 ## Environment Variables
 
-For local SQLite development, copy `.env.local.sqlite.example` to `.env`.
+Copy one of the example files. These are the only runtime variables the app reads.
+
+| Variable | Required | Used for |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Prisma. SQLite file locally, Postgres on Vercel/Supabase. |
+| `APP_URL` | Recommended | Canonical site URL. |
+| `SESSION_SECRET` | Yes in production | Reserved for hardening the cookie session. |
+| `CRM_IMPORT_API_KEY` | Yes for Zapier | `X-CRM-API-KEY` on `POST /api/leads/import`. |
+| `OPENAI_API_KEY` | Optional | Server-side lead analysis. Blank = keyword fallback. |
+
+Local SQLite:
+
+```text
+cp .env.local.sqlite.example .env
+```
 
 ```text
 DATABASE_URL="file:./dev.db"
@@ -50,13 +81,27 @@ CRM_IMPORT_API_KEY="replace-with-a-zapier-webhook-secret"
 OPENAI_API_KEY=""
 ```
 
-For Vercel, use `.env.example` as the deploy-time variable checklist. Do not copy hosted production secrets into source files.
+Vercel / Supabase: use `.env.example` as the deploy checklist. Set the same names in the Vercel project. Do not commit hosted secrets.
 
-`OPENAI_API_KEY` is only used server-side. If it is blank, the app uses a local keyword fallback so import flows still work.
+```text
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+APP_URL="https://your-vercel-app.vercel.app"
+SESSION_SECRET="long-random-secret"
+CRM_IMPORT_API_KEY="long-random-zapier-secret"
+OPENAI_API_KEY=""
+```
+
+`CRM_IMPORT_API_KEY` belongs only in Vercel and Zapier. `OPENAI_API_KEY` is server-side only.
+
+After pulling schema changes, push columns to the hosted database:
+
+```text
+pnpm db:push:postgres
+```
 
 ## Local Commands
 
-```powershell
+```text
 pnpm install
 pnpm prisma generate
 pnpm db:push
@@ -72,54 +117,33 @@ diego@example.com
 demo1234
 ```
 
-## Database Setup
+Optional demo parcels (includes underwriting + one closed deal):
 
-Local development uses SQLite through Prisma:
-
-```powershell
-pnpm prisma generate
-pnpm db:push
-```
-
-Only run demo seeding intentionally:
-
-```powershell
+```text
 pnpm db:seed:demo
 ```
 
-Local development uses `prisma/schema.prisma`, which remains SQLite so the local app is not removed.
+## Database Setup
 
-Vercel development deployment uses `prisma/schema.postgres.prisma`, which is PostgreSQL. Before deploying, create a hosted PostgreSQL database and set `DATABASE_URL` to that hosted connection string.
+Local development uses `prisma/schema.prisma` (SQLite) so the app runs without a hosted database.
 
-To push the schema to the hosted PostgreSQL database:
+Vercel uses `prisma/schema.postgres.prisma`. Create a Supabase/Postgres database, set `DATABASE_URL`, then:
 
-```powershell
+```text
 pnpm db:push:postgres
 ```
 
-Run that only when `DATABASE_URL` points to the hosted PostgreSQL database.
+Run that only when `DATABASE_URL` points at the hosted database.
 
 ## Vercel Development Deployment
 
-This app is prepared for Vercel with `vercel.json`.
-
-Vercel build command:
+`vercel.json` sets the build command to:
 
 ```text
 pnpm build:vercel
 ```
 
-Vercel environment variables:
-
-```text
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
-APP_URL="https://your-vercel-app.vercel.app"
-SESSION_SECRET="long-random-secret"
-CRM_IMPORT_API_KEY="long-random-zapier-secret"
-OPENAI_API_KEY=""
-```
-
-`CRM_IMPORT_API_KEY` belongs only in Vercel environment variables and Zapier's webhook header. Never commit the deployed key to source and never expose it in frontend code.
+Auth, Zapier import, and the existing deploy path are unchanged. New land fields are additive Prisma columns.
 
 ## Zapier Webhook Configuration
 
@@ -145,7 +169,7 @@ Message History Direction
 Message History Date
 ```
 
-The three message-history fields can be arrays or comma-separated values. The CRM reconstructs the conversation by matching each message by array index. `sent` is Diego/the business and `received` is the seller.
+The three message-history fields can be arrays or comma-separated values. `sent` is Diego/the business and `received` is the seller. New imports land in **Lead SC**, move to **Precio/Ask** when a price appears, and **Dead** for DNC / wrong number. Re-imports do not rewind a deal that is already further along.
 
 ## Test Import
 
@@ -172,12 +196,11 @@ Invoke-RestMethod `
 
 ## Remaining Limitations
 
-- V1 does not send SMS.
-- V1 does not connect directly to SmarterContact for outbound messaging.
+- V1 does not send SMS or talk to SmarterContact outbound.
 - V1 does not negotiate autonomously.
-- Offer guardrail fields exist, but enforcement is limited to AI suggested-reply warning detection.
-- Authentication is intentionally simple for a private single-user MVP.
+- Underwriting-pack push from an agent is a stub (URL + notes on the deal).
+- Authentication is a private single-user cookie session.
 
 ## Recommended Next Step
 
-Connect a real OpenAI API key, import a small batch of actual SmarterContact/Zapier exports, and tune the negotiation settings using real seller reply patterns before adding one-click messaging.
+Connect a real OpenAI key, import a small SmarterContact batch, and have an agent push Land Portal / ARV packs into the deal stub.

@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   return (
     <Shell>
       <h1 className="text-2xl font-semibold">Settings</h1>
-      <p className="mb-5 text-sm text-slate-500">Negotiation rules are stored in the database for future AI agent phases.</p>
+      <p className="mb-5 text-sm text-slate-500">SMS negotiation rules stay here for later agents that push underwriting packs into a deal.</p>
       <form action={saveSettings} className="grid gap-4 rounded border border-black/10 bg-white p-5 shadow-sm">
         {Object.entries(defaults).map(([key, fallback]) => (
           <label key={key} className="block text-sm font-semibold">
