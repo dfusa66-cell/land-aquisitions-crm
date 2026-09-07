@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { importLead } from "@/lib/import-lead";
 
+// Zapier lead+thread import. For agent SMS-only sync see POST /api/messages/import.
+
 export async function POST(request: Request) {
   const expected = process.env.CRM_IMPORT_API_KEY;
   if (!expected || request.headers.get("X-CRM-API-KEY") !== expected) {
