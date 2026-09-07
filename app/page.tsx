@@ -75,8 +75,8 @@ export default async function Dashboard() {
             Under contract / bought — projected exit
             <span className="mt-1 block text-slate-400">
               {inventory.length > 0
-                ? `${inventory.length} deal${inventory.length === 1 ? "" : "s"} already in (UC / ready to close)`
-                : "Saved pipeline projected until a UC / bought deal is in the CRM"}
+                ? `${inventory.length} deal${inventory.length === 1 ? "" : "s"} already in (under contract / ready to close)`
+                : "Saved pipeline projected until an under-contract / bought deal is in the CRM"}
             </span>
           </p>
         </article>
