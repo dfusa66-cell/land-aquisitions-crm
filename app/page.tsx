@@ -64,12 +64,10 @@ export default async function Dashboard() {
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Profit total</div>
             <div className="mt-1 text-sm font-medium text-emerald-100">Net profit (negocio)</div>
             <div className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{formatMoney(metrics.netProfitAllTime)}</div>
-            <p className="mt-4 border-t border-white/15 pt-3 text-sm text-emerald-100">{metrics.note}</p>
           </div>
         </article>
         <article className="rounded-3xl border border-moss/15 bg-white p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Potential profit</div>
-          <div className="mt-1 text-sm font-medium text-moss">Ganancia potencial</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Pipeline Profit</div>
           <div className="mt-3 text-4xl font-semibold tracking-tight text-moss">{formatMoney(potentialProfit)}</div>
           <p className="mt-3 text-sm leading-6 text-slate-500">
             Under contract / bought — projected exit
@@ -81,8 +79,7 @@ export default async function Dashboard() {
           </p>
         </article>
         <article className="rounded-3xl border border-gold/25 bg-[#fbf8f1] p-6 shadow-[0_12px_30px_-24px_rgba(23,32,38,0.45)]">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Possible profit</div>
-          <div className="mt-1 text-sm font-medium text-gold">Ganancia posible · en trabajo</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Profit in the works</div>
           <div className="mt-3 text-4xl font-semibold tracking-tight text-ink">{formatMoney(possibleProfit)}</div>
           <p className="mt-3 text-sm leading-6 text-slate-500">
             Deals still in work, not purchased yet
