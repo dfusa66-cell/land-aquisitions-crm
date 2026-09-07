@@ -12,8 +12,8 @@ export const DIEGO_PNL_DEFAULTS = {
   scAffiliateIncome: 7000,
   landPortalAffiliateIncome: 11090,
   marketingSpend: 18000,
-  pipelineProjectedProfit: 26000,
-  periodLabel: "Aug 2025–Sep 2026",
+  pipelineProjected: 26000,
+  note: "Aug 2025–Sep 2026",
   updatedAt: null as Date | null
 };
 
@@ -81,7 +81,7 @@ export function projectedPipelineProfit(
     underwritingPackNote?: string | null;
     aiSummary?: string | null;
   }>,
-  fallback = DIEGO_PNL_DEFAULTS.pipelineProjectedProfit
+  fallback = DIEGO_PNL_DEFAULTS.pipelineProjected
 ) {
   const matches = leads.filter(looksUnderContract);
   const sum = matches.reduce((total, lead) => {
@@ -95,14 +95,26 @@ export function projectedPipelineProfit(
   return sum > 0 ? sum : fallback;
 }
 
+function parseAffiliateSplit(note: string | null | undefined) {
+  if (!note) return null;
+  const sc = note.match(/SC(?:\s+affiliate)?[:\s]+\$?([0-9,]+)/i);
+  const portal = note.match(/Land Portal(?:\s+affiliate)?[:\s]+\$?([0-9,]+)/i);
+  if (!sc && !portal) return null;
+  return {
+    scAffiliateIncome: sc ? Number(sc[1].replace(/,/g, "")) : DIEGO_PNL_DEFAULTS.scAffiliateIncome,
+    landPortalAffiliateIncome: portal ? Number(portal[1].replace(/,/g, "")) : DIEGO_PNL_DEFAULTS.landPortalAffiliateIncome
+  };
+}
+
 export function normalizeBusinessMetrics(input: Partial<BusinessMetricsValues> | null | undefined): BusinessMetricsValues {
-  const sc = input?.scAffiliateIncome ?? DIEGO_PNL_DEFAULTS.scAffiliateIncome;
-  const portal = input?.landPortalAffiliateIncome ?? DIEGO_PNL_DEFAULTS.landPortalAffiliateIncome;
+  const fromNote = parseAffiliateSplit(input?.note);
+  const sc = input?.scAffiliateIncome ?? fromNote?.scAffiliateIncome ?? DIEGO_PNL_DEFAULTS.scAffiliateIncome;
+  const portal = input?.landPortalAffiliateIncome ?? fromNote?.landPortalAffiliateIncome ?? DIEGO_PNL_DEFAULTS.landPortalAffiliateIncome;
   const affiliate = computeAffiliateIncome({
     affiliateIncome: input?.affiliateIncome ?? DIEGO_PNL_DEFAULTS.affiliateIncome,
-    scAffiliateIncome: sc,
-    landPortalAffiliateIncome: portal
-  });
+    scAffiliateIncome: input?.scAffiliateIncome ?? fromNote?.scAffiliateIncome ?? null,
+    landPortalAffiliateIncome: input?.landPortalAffiliateIncome ?? fromNote?.landPortalAffiliateIncome ?? null
+  }) || (input?.affiliateIncome ?? DIEGO_PNL_DEFAULTS.affiliateIncome);
   const landProfitClosed = input?.landProfitClosed ?? DIEGO_PNL_DEFAULTS.landProfitClosed;
   const coachingIncome = input?.coachingIncome ?? DIEGO_PNL_DEFAULTS.coachingIncome;
   const marketingSpend = input?.marketingSpend ?? DIEGO_PNL_DEFAULTS.marketingSpend;
@@ -121,8 +133,8 @@ export function normalizeBusinessMetrics(input: Partial<BusinessMetricsValues> |
     scAffiliateIncome: sc,
     landPortalAffiliateIncome: portal,
     marketingSpend,
-    pipelineProjectedProfit: input?.pipelineProjectedProfit ?? DIEGO_PNL_DEFAULTS.pipelineProjectedProfit,
-    periodLabel: input?.periodLabel?.trim() || DIEGO_PNL_DEFAULTS.periodLabel,
+    pipelineProjected: input?.pipelineProjected ?? DIEGO_PNL_DEFAULTS.pipelineProjected,
+    note: input?.note?.trim() || DIEGO_PNL_DEFAULTS.note,
     updatedAt: input?.updatedAt ?? null
   };
 }
@@ -131,8 +143,9 @@ export function metricsFromFormData(formData: FormData): BusinessMetricsValues {
   const sc = parseMoney(formData.get("scAffiliateIncome")) ?? DIEGO_PNL_DEFAULTS.scAffiliateIncome;
   const portal = parseMoney(formData.get("landPortalAffiliateIncome")) ?? DIEGO_PNL_DEFAULTS.landPortalAffiliateIncome;
   const affiliate =
-    parseMoney(formData.get("affiliateIncome")) ??
-    computeAffiliateIncome({ scAffiliateIncome: sc, landPortalAffiliateIncome: portal });
+    computeAffiliateIncome({ scAffiliateIncome: sc, landPortalAffiliateIncome: portal }) ||
+    parseMoney(formData.get("affiliateIncome")) ||
+    DIEGO_PNL_DEFAULTS.affiliateIncome;
   const landProfitClosed = parseMoney(formData.get("landProfitClosed")) ?? DIEGO_PNL_DEFAULTS.landProfitClosed;
   const coachingIncome = parseMoney(formData.get("coachingIncome")) ?? DIEGO_PNL_DEFAULTS.coachingIncome;
   const marketingSpend = parseMoney(formData.get("marketingSpend")) ?? DIEGO_PNL_DEFAULTS.marketingSpend;
@@ -143,6 +156,7 @@ export function metricsFromFormData(formData: FormData): BusinessMetricsValues {
     marketingSpend
   });
   const explicitNet = parseMoney(formData.get("netProfitAllTime"));
+  const period = String(formData.get("note") ?? formData.get("periodLabel") ?? DIEGO_PNL_DEFAULTS.note);
 
   return normalizeBusinessMetrics({
     netProfitAllTime: explicitNet ?? computedNet,
@@ -152,8 +166,8 @@ export function metricsFromFormData(formData: FormData): BusinessMetricsValues {
     scAffiliateIncome: sc,
     landPortalAffiliateIncome: portal,
     marketingSpend,
-    pipelineProjectedProfit: parseMoney(formData.get("pipelineProjectedProfit")) ?? DIEGO_PNL_DEFAULTS.pipelineProjectedProfit,
-    periodLabel: String(formData.get("periodLabel") ?? DIEGO_PNL_DEFAULTS.periodLabel)
+    pipelineProjected: parseMoney(formData.get("pipelineProjected")) ?? parseMoney(formData.get("pipelineProjectedProfit")) ?? DIEGO_PNL_DEFAULTS.pipelineProjected,
+    note: period
   });
 }
 
@@ -164,11 +178,9 @@ function persistableMetrics(input: BusinessMetricsValues) {
     landProfitClosed: values.landProfitClosed,
     coachingIncome: values.coachingIncome,
     affiliateIncome: values.affiliateIncome,
-    scAffiliateIncome: values.scAffiliateIncome,
-    landPortalAffiliateIncome: values.landPortalAffiliateIncome,
     marketingSpend: values.marketingSpend,
-    pipelineProjectedProfit: values.pipelineProjectedProfit,
-    periodLabel: values.periodLabel
+    pipelineProjected: values.pipelineProjected,
+    note: values.note
   };
 }
 
@@ -177,14 +189,16 @@ function toValues(row: {
   landProfitClosed: number;
   coachingIncome: number;
   affiliateIncome: number;
-  scAffiliateIncome: number;
-  landPortalAffiliateIncome: number;
   marketingSpend: number;
-  pipelineProjectedProfit: number;
-  periodLabel: string;
+  pipelineProjected: number | null;
+  note: string | null;
   updatedAt: Date;
 }): BusinessMetricsValues {
-  return normalizeBusinessMetrics(row);
+  return normalizeBusinessMetrics({
+    ...row,
+    pipelineProjected: row.pipelineProjected ?? DIEGO_PNL_DEFAULTS.pipelineProjected,
+    note: row.note ?? DIEGO_PNL_DEFAULTS.note
+  });
 }
 
 export async function loadBusinessMetrics(): Promise<SafeLoad<BusinessMetricsValues>> {

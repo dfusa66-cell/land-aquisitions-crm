@@ -43,19 +43,19 @@ export default async function SettingsPage() {
             Durable totals for the dashboard. Seeded from Diego&apos;s Aug 2025–Sep 2026 numbers. Agents can update these without shipping a frontend change.
           </p>
           <p className="mt-2 text-sm font-medium text-grove">
-            Current net {formatMoney(metrics.netProfitAllTime)} · period {metrics.periodLabel}
+            Current net {formatMoney(metrics.netProfitAllTime)} · {metrics.note}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <MoneyField name="netProfitAllTime" label="Net profit (negocio)" defaultValue={metrics.netProfitAllTime} />
-          <Field name="periodLabel" label="Period label" defaultValue={metrics.periodLabel} />
+          <Field name="note" label="Note / period" defaultValue={metrics.note} />
           <MoneyField name="landProfitClosed" label="Closed land profit" defaultValue={metrics.landProfitClosed} />
           <MoneyField name="coachingIncome" label="Coaching income" defaultValue={metrics.coachingIncome} />
           <MoneyField name="scAffiliateIncome" label="SC affiliate" defaultValue={metrics.scAffiliateIncome} />
           <MoneyField name="landPortalAffiliateIncome" label="Land Portal affiliate" defaultValue={metrics.landPortalAffiliateIncome} />
           <MoneyField name="affiliateIncome" label="Affiliate income (combined)" defaultValue={metrics.affiliateIncome} />
           <MoneyField name="marketingSpend" label="Marketing spend" defaultValue={metrics.marketingSpend} />
-          <MoneyField name="pipelineProjectedProfit" label="Pipeline projected profit" defaultValue={metrics.pipelineProjectedProfit} />
+          <MoneyField name="pipelineProjected" label="Pipeline projected profit" defaultValue={metrics.pipelineProjected} />
         </div>
         <button className="w-fit rounded-xl bg-grove px-4 py-2.5 text-sm font-semibold text-white shadow-sm">Save business P&amp;L</button>
       </form>

@@ -38,7 +38,7 @@ export default async function Dashboard() {
   const closedProfit = closedThisMonth.reduce((sum, lead) => sum + (lead.profit ?? 0), 0);
   const ready = decorated.filter((lead) => lead.pipelineStage === "READY_TO_CLOSE");
   const needsAsk = decorated.filter((lead) => lead.pipelineStage === "LEAD_SC" || lead.pipelineStage === "PRECIO_ASK");
-  const pipelineProjected = projectedPipelineProfit(decorated, metrics.pipelineProjectedProfit);
+  const pipelineProjected = projectedPipelineProfit(decorated, metrics.pipelineProjected);
 
   return (
     <Shell>
@@ -60,7 +60,7 @@ export default async function Dashboard() {
             <div className="mt-1 text-sm font-medium text-emerald-100">Net profit (negocio)</div>
             <div className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{formatMoney(metrics.netProfitAllTime)}</div>
             <p className="mt-3 text-sm leading-6 text-white/75">
-              {metrics.periodLabel}
+              {metrics.note}
               {metrics.updatedAt ? ` · updated ${metrics.updatedAt.toLocaleDateString()}` : ""}
             </p>
             <p className="mt-3 text-xs leading-5 text-white/65">

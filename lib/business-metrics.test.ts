@@ -19,7 +19,7 @@ describe("Diego P&L defaults", () => {
     assert.equal(DIEGO_PNL_DEFAULTS.coachingIncome, 25000);
     assert.equal(DIEGO_PNL_DEFAULTS.marketingSpend, 18000);
     assert.equal(DIEGO_PNL_DEFAULTS.netProfitAllTime, 207090);
-    assert.equal(DIEGO_PNL_DEFAULTS.pipelineProjectedProfit, 26000);
+    assert.equal(DIEGO_PNL_DEFAULTS.pipelineProjected, 26000);
     assert.equal(
       computeNetProfit({
         landProfitClosed: 182000,
@@ -58,7 +58,7 @@ describe("normalizeBusinessMetrics", () => {
     });
     assert.equal(metrics.affiliateIncome, 18090);
     assert.equal(metrics.netProfitAllTime, 123456);
-    assert.equal(metrics.periodLabel, "Aug 2025–Sep 2026");
+    assert.equal(metrics.note, "Aug 2025–Sep 2026");
   });
 });
 

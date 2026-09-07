@@ -98,7 +98,7 @@ OPENAI_API_KEY=""
 
 `CRM_IMPORT_API_KEY` belongs only in Vercel and Zapier. `OPENAI_API_KEY` is server-side only.
 
-After pulling schema changes, push columns to the hosted database. This is required after the vacant-land pipeline merge (`pipelineStage`, ARV, Land Portal, profit fields) and the `BusinessMetrics` P&L table. If you skip it, `/login` still renders, but sign-in or the dashboard can fail against the old Postgres schema. The Profit total card falls back to Diego's Aug 2025–Sep 2026 defaults if the table is missing.
+After pulling schema changes, push columns to the hosted database. This is required after the vacant-land pipeline merge (`pipelineStage`, ARV, Land Portal, profit fields). Production already has `BusinessMetrics` (`netProfitAllTime`, `landProfitClosed`, `coachingIncome`, `affiliateIncome`, `marketingSpend`, `pipelineProjected`, `note`). Prisma mirrors those names — do not drop or recreate the table. If the table is missing locally, the Profit total card falls back to Diego's Aug 2025–Sep 2026 defaults.
 
 ```text
 # Use the same DATABASE_URL as the Vercel production project (Supabase/Postgres).

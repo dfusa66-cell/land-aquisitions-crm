@@ -135,16 +135,13 @@ model NegotiationSettings {
 }
 
 model BusinessMetrics {
-  id                        String   @id @default("default")
-  netProfitAllTime          Float    @default(207090)
-  landProfitClosed          Float    @default(182000)
-  coachingIncome            Float    @default(25000)
-  affiliateIncome           Float    @default(18090)
-  scAffiliateIncome         Float    @default(7000)
-  landPortalAffiliateIncome Float    @default(11090)
-  marketingSpend            Float    @default(18000)
-  pipelineProjectedProfit   Float    @default(26000)
-  periodLabel               String   @default("Aug 2025–Sep 2026")
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                 String   @id @default("default")
+  landProfitClosed   Float    @default(182000)
+  coachingIncome     Float    @default(25000)
+  affiliateIncome    Float    @default(18090)
+  marketingSpend     Float    @default(18000)
+  netProfitAllTime   Float    @default(207090)
+  pipelineProjected  Float    @default(26000)
+  note               String?
+  updatedAt          DateTime @updatedAt
 }

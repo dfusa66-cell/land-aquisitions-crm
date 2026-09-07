@@ -10,18 +10,24 @@ async function main() {
   });
   await prisma.businessMetrics.upsert({
     where: { id: "default" },
-    update: {},
+    update: {
+      netProfitAllTime: 207090,
+      landProfitClosed: 182000,
+      coachingIncome: 25000,
+      affiliateIncome: 18090,
+      marketingSpend: 18000,
+      pipelineProjected: 26000,
+      note: "Aug 2025–Sep 2026 · SC 7000 · Land Portal 11090"
+    },
     create: {
       id: "default",
       netProfitAllTime: 207090,
       landProfitClosed: 182000,
       coachingIncome: 25000,
       affiliateIncome: 18090,
-      scAffiliateIncome: 7000,
-      landPortalAffiliateIncome: 11090,
       marketingSpend: 18000,
-      pipelineProjectedProfit: 26000,
-      periodLabel: "Aug 2025–Sep 2026"
+      pipelineProjected: 26000,
+      note: "Aug 2025–Sep 2026 · SC 7000 · Land Portal 11090"
     }
   });
   await prisma.negotiationSettings.upsert({
